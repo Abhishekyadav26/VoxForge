@@ -42,8 +42,9 @@ scripts/test-engine.ts        — offline smoke test
 |---|---|---|
 | `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` | Send alerts | logs instead |
 | `COINMARKETCAP_API_KEY` | Live prices (official CMC Pro SDK) | mock prices |
-| `GROQ_API_KEY` | Groq text→spec (llama) | rule-based extractor |
-| `GROQ_MODEL` | Groq model id | `openai/gpt-oss-120b` |
+| `GROQ_API_KEY` | Groq text→spec (GPT-OSS/Qwen) | rule-based extractor |
+| `GROQ_MODEL` | Primary Groq model | `openai/gpt-oss-120b` |
+| `GROQ_MODEL_FALLBACKS` | Comma-separated model chain used if primary is retired/rate-limited | `openai/gpt-oss-20b,qwen/qwen3.8-27b,allam-2-7b` |
 
 **Data sources:** prices use the official [`@coinmarketcap/sdk`](https://www.npmjs.com/package/@coinmarketcap/sdk) (`quotes/latest`); wallet balances use the public Solana RPC (`api.mainnet-beta.solana.com`) — no Helius/Jupiter keys needed.
 

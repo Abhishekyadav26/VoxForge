@@ -1,7 +1,7 @@
 import { promises as fs } from "fs";
 import path from "path";
-import Groq from "groq-sdk";
 import { AgentSpec } from "./spec-schema";
+import { groqChat } from "./groq";
 
 const PROMPT_FILE = path.join(process.cwd(), "code-generator-prompt.md");
 
@@ -58,21 +58,17 @@ ${messages}
 
 /** Groq-based generation — used when an API key is set. */
 async function generateCodeWithGroq(spec: AgentSpec): Promise<string> {
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) throw new Error("GROQ_API_KEY not set");
-  const groq = new Groq({ apiKey });
   const system = await fs.readFile(PROMPT_FILE, "utf8");
 
   const attempt = async (): Promise<string> => {
-    const res = await groq.chat.completions.create({
-      model: process.env.GROQ_MODEL ?? "openai/gpt-oss-120b",
-      max_tokens: 2500,
-      messages: [
-        { role: "system", content: system },
-        { role: "user", content: JSON.stringify(spec, null, 2) },
+    const text = await groqChat(
+      [
+        { role: "system" as const, content: system },
+        { role: "user" as const, content: JSON.stringify(spec, null, 2) },
       ],
-    });
-    return res.choices?.[0]?.message?.content ?? "";
+      { maxTokens: 2500 }
+    );
+    return text;
   };
 
   try {

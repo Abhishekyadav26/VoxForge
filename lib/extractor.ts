@@ -1,7 +1,7 @@
 import { promises as fs } from "fs";
 import path from "path";
-import Groq from "groq-sdk";
 import { AgentSpec, AgentSpecSchema } from "./spec-schema";
+import { groqChat } from "./groq";
 
 const DEFAULT_TRIGGER = { type: "interval", every: "60s" } as const;
 const PROMPT_FILE = path.join(process.cwd(), "spec-extractor-prompt.md");
@@ -134,22 +134,16 @@ export function extractSpecLocal(transcript: string): AgentSpec {
 
 // ---------- Groq-based extractor (used when GROQ_API_KEY present) ----------
 async function extractSpecWithGroq(transcript: string): Promise<AgentSpec> {
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) throw new Error("GROQ_API_KEY not set");
-  const groq = new Groq({ apiKey });
   const system = await fs.readFile(PROMPT_FILE, "utf8");
 
   const attempt = async (): Promise<AgentSpec> => {
-    const res = await groq.chat.completions.create({
-      model: process.env.GROQ_MODEL ?? "openai/gpt-oss-120b",
-      response_format: { type: "json_object" },
-      max_tokens: 1500,
-      messages: [
-        { role: "system", content: system },
-        { role: "user", content: transcript },
+    const text = await groqChat(
+      [
+        { role: "system" as const, content: system },
+        { role: "user" as const, content: transcript },
       ],
-    });
-    const text = res.choices?.[0]?.message?.content ?? "";
+      { json: true, maxTokens: 1500 }
+    );
     return AgentSpecSchema.parse(JSON.parse(text));
   };
 
