@@ -4,4 +4,3 @@ out
 data/
 .env.local
 *.tsbuildinfo
-_shots/

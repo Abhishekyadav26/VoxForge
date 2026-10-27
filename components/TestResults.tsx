@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { NumberTicker } from "@/components/ui/number-ticker";
+import { TokenStatCard } from "@/components/TokenStatCard";
 import type { AgentSpec } from "@/lib/spec-schema";
 
 interface TraceLine { stepId: string; block: string; detail: string; output: Record<string, unknown>; }
@@ -24,24 +25,47 @@ export default function TestResults({ spec }: { spec: AgentSpec }) {
     <button onClick={dryRun} disabled={loading} className="rounded bg-slate-700 px-4 py-2 text-sm font-semibold disabled:opacity-50">{loading ? "Running…" : "▶ Run trace"}</button>
     {error && <p className="text-sm text-red-400">{error}</p>}
     {state?.trace && (() => {
-      const priceOut = state.trace.map((t: any) => t.output).find((o: any) => o && typeof o.price === "number");
-      const balOut = state.trace.map((t: any) => t.output).find((o: any) => o && typeof o.balance === "number");
+      const priceStep = (state.trace as any[]).find((t: any) => t.output && typeof t.output.price === "number");
+      const balStep = (state.trace as any[]).find((t: any) => t.output && typeof t.output.balance === "number");
+      const priceOut = priceStep?.output;
+      const balOut = balStep?.output;
+      // Which token are we pricing? (from the price.get step params)
+      const priceParams = (spec.steps.find((s: any) => s.block === "price.get")?.params ?? {}) as Record<string, any>;
+      const ticker = String(priceParams.token ?? "SOL");
+      const pctStep = (state.trace as any[]).find((t: any) => typeof t.output?.actualChange === "number");
+      const pct: number | undefined = pctStep?.output?.actualChange;
       return (<>
         {priceOut && (
-          <div className="flex items-baseline gap-3 rounded border border-slate-700 bg-slate-900 p-4">
-            <span className="text-4xl font-bold tracking-tight text-emerald-400">
-              $<NumberTicker value={priceOut.price} decimalPlaces={2} />
+          <TokenStatCard
+            ticker={ticker}
+            name=""
+            currentPrice={priceOut.price}
+            percentageChange={pct}
+            triggered={!!state.triggered}
+          >
+            <span className="flex items-baseline gap-2 text-sm text-slate-400">
+              Live dry-run price:
+              <span className="text-2xl font-bold tracking-tight text-emerald-400">
+                $<NumberTicker value={priceOut.price} decimalPlaces={2} />
+              </span>
             </span>
-            <span className="text-sm text-slate-400">live dry-run price (CoinMarketCap)</span>
-          </div>
+          </TokenStatCard>
         )}
         {balOut && (
-          <div className="flex items-baseline gap-3 rounded border border-slate-700 bg-slate-900 p-4">
-            <span className="text-4xl font-bold tracking-tight text-emerald-400">
-              <NumberTicker value={balOut.balance} decimalPlaces={4} />
+          <TokenStatCard
+            ticker="SOL"
+            name=""
+            currentPrice={balOut.balance}
+            percentageChange={pct}
+            triggered={!!state.triggered}
+          >
+            <span className="flex items-baseline gap-2 text-sm text-slate-400">
+              Wallet balance:
+              <span className="text-2xl font-bold tracking-tight text-emerald-400">
+                <NumberTicker value={balOut.balance} decimalPlaces={4} /> SOL
+              </span>
             </span>
-            <span className="text-sm text-slate-400">SOL wallet balance (Solana RPC)</span>
-          </div>
+          </TokenStatCard>
         )}
       </>);
     })()}
