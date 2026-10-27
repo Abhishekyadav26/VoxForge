@@ -141,7 +141,7 @@ async function extractSpecWithGroq(transcript: string): Promise<AgentSpec> {
 
   const attempt = async (): Promise<AgentSpec> => {
     const res = await groq.chat.completions.create({
-      model: process.env.GROQ_MODEL ?? "llama-3.3-70b-versatile",
+      model: process.env.GROQ_MODEL ?? "openai/gpt-oss-120b",
       response_format: { type: "json_object" },
       max_tokens: 1500,
       messages: [

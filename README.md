@@ -43,7 +43,7 @@ scripts/test-engine.ts        — offline smoke test
 | `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` | Send alerts | logs instead |
 | `COINMARKETCAP_API_KEY` | Live prices (official CMC Pro SDK) | mock prices |
 | `GROQ_API_KEY` | Groq text→spec (llama) | rule-based extractor |
-| `GROQ_MODEL` | Groq model id | `llama-3.3-70b-versatile` |
+| `GROQ_MODEL` | Groq model id | `openai/gpt-oss-120b` |
 
 **Data sources:** prices use the official [`@coinmarketcap/sdk`](https://www.npmjs.com/package/@coinmarketcap/sdk) (`quotes/latest`); wallet balances use the public Solana RPC (`api.mainnet-beta.solana.com`) — no Helius/Jupiter keys needed.
 

@@ -62,8 +62,14 @@ export async function getPrice(
         );
       }
       // The SDK returns the full response body: { data: CryptoQuoteV3Dto[], status }.
-      const entries = data?.data;
-      const entry = entries?.find((d) => d.symbol?.toUpperCase() === sym);
+      // A symbol like SOL matches many dead projects (Solcoin 2014, Sola Token,
+      // …) — prefer the entry that actually carries a real numeric quote.
+      const entries = data?.data ?? [];
+      const matches = entries.filter((d) => d.symbol?.toUpperCase() === sym);
+      const entry =
+        matches.find((d) =>
+          d.quote?.some((q) => typeof q.price === "number" && q.price !== null)
+        ) ?? matches[0] ?? undefined;
       const quote = entry?.quote?.find((q) => q.symbol?.toUpperCase() === conv);
       const price = quote?.price;
       if (typeof price !== "number") {
