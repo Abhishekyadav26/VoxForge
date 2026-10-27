@@ -1,5 +1,6 @@
 import { getAgent, listRuns } from "@/lib/db";
 import RunButton from "@/components/RunButton";
+import AnimatedRuns from "@/components/AnimatedRuns";
 import { Link } from "next-view-transitions";
 
 export const dynamic = "force-dynamic";
@@ -34,16 +35,7 @@ export default async function AgentDetail({ params }: { params: { id: string } }
         {JSON.stringify(agent.spec, null, 2)}
       </pre>
       <h2 className="text-lg font-semibold">Runs ({runs.length})</h2>
-      {runs.map((r) => (
-        <div key={r.id} className="rounded border border-slate-700 p-3 text-sm">
-          <div>
-            {r.executedAt} — {r.triggered ? "🔔 triggered" : "no trigger"}
-          </div>
-          <pre className="mt-2 overflow-auto text-xs text-slate-300">
-            {JSON.stringify(r.trace, null, 2)}
-          </pre>
-        </div>
-      ))}
+      <AnimatedRuns runs={runs} />
     </main>
   );
 }

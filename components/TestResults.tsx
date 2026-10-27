@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { NumberTicker } from "@/components/ui/number-ticker";
 import type { AgentSpec } from "@/lib/spec-schema";
 
 interface TraceLine { stepId: string; block: string; detail: string; output: Record<string, unknown>; }
@@ -22,6 +23,28 @@ export default function TestResults({ spec }: { spec: AgentSpec }) {
     <h2 className="text-lg font-semibold">Dry Run</h2>
     <button onClick={dryRun} disabled={loading} className="rounded bg-slate-700 px-4 py-2 text-sm font-semibold disabled:opacity-50">{loading ? "Running…" : "▶ Run trace"}</button>
     {error && <p className="text-sm text-red-400">{error}</p>}
+    {state?.trace && (() => {
+      const priceOut = state.trace.map((t: any) => t.output).find((o: any) => o && typeof o.price === "number");
+      const balOut = state.trace.map((t: any) => t.output).find((o: any) => o && typeof o.balance === "number");
+      return (<>
+        {priceOut && (
+          <div className="flex items-baseline gap-3 rounded border border-slate-700 bg-slate-900 p-4">
+            <span className="text-4xl font-bold tracking-tight text-emerald-400">
+              $<NumberTicker value={priceOut.price} decimalPlaces={2} />
+            </span>
+            <span className="text-sm text-slate-400">live dry-run price (CoinMarketCap)</span>
+          </div>
+        )}
+        {balOut && (
+          <div className="flex items-baseline gap-3 rounded border border-slate-700 bg-slate-900 p-4">
+            <span className="text-4xl font-bold tracking-tight text-emerald-400">
+              <NumberTicker value={balOut.balance} decimalPlaces={4} />
+            </span>
+            <span className="text-sm text-slate-400">SOL wallet balance (Solana RPC)</span>
+          </div>
+        )}
+      </>);
+    })()}
     {state?.trace && (<ol className="space-y-1 rounded border border-slate-700 bg-slate-900 p-3 text-sm">
       {state.trace.map((t: TraceLine, i: number) => (<li key={i} className="text-slate-300"><span className="font-mono text-emerald-400">{t.stepId}</span> · {t.detail}</li>))}
     </ol>)}

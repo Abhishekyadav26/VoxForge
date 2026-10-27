@@ -58,3 +58,19 @@
     animation-delay: 0s !important;
   }
 }
+
+@layer utilities {
+  /* Magic UI PulsatingButton ripple (Tailwind v3 compatible) */
+  .animate-pulse-ripple {
+    animation: pulse-ripple var(--duration, 1.5s) cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  }
+}
+
+@keyframes pulse-ripple {
+  0% {
+    box-shadow: 0 0 0 0 var(--pulse-color, #10b981);
+  }
+  100% {
+    box-shadow: 0 0 0 var(--distance, 8px) transparent;
+  }
+}

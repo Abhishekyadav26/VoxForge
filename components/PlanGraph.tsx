@@ -2,6 +2,7 @@
 import ReactFlow, { Background, Controls, MarkerType, type Node, type Edge } from "reactflow";
 import "reactflow/dist/style.css";
 import { useMemo } from "react";
+import { BorderBeam } from "@/components/ui/border-beam";
 import type { AgentSpec } from "@/lib/spec-schema";
 
 const KIND_STYLE: Record<string, { bg: string; fg: string }> = {
@@ -52,7 +53,8 @@ export default function PlanGraph({ spec, onSelectStep }: Props) {
     return { nodes: ns, edges: es };
   }, [spec]);
 
-  return (<div className="rounded border border-slate-700 p-2">
+  return (<div className="relative overflow-hidden rounded border border-slate-700 p-2">
+    <BorderBeam size={220} duration={10} colorFrom="#10b981" colorTo="#f59e0b" />
     <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} fitView onNodeClick={(_, n) => onSelectStep(n.id === "action" ? null : n.id)}>
       <Background gap={16} />
       <Controls />

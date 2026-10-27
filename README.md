@@ -51,6 +51,7 @@ scripts/test-engine.ts        — offline smoke test
 ## UI
 
 - **Route transitions** via the native View Transitions API (`next-view-transitions`): pages cross-fade; the agent card **morphs into the detail title** via a shared `view-transition-name` (`agent-card-<id>`). Reduced-motion preferences are respected; unsupported browsers skip animations entirely.
+- **Magic UI components** (`components/ui/`, installed via the Magic UI MCP + shadcn registry): `NumberTicker` animates live prices/balances in dry-runs, `PulsatingButton` drives the mic (ripple variant), `BorderBeam` runs along the plan-graph panel, `AnimatedList` staggers agent run logs.
 
 - The interpreter/generator only execute the fixed block set — never arbitrary user code.
 - Private keys never enter specs or the DB; Telegram chat ID comes from env, not the spec.

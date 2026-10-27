@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { PulsatingButton } from "@/components/ui/pulsating-button";
 
 interface Props {
   onTranscript: (text: string) => void; // final text (appended on stop)
@@ -62,9 +63,14 @@ export default function VoiceRecorder({ onTranscript, onPartial, onError }: Prop
     return <p className="text-sm text-amber-400">🎙️ Speech not supported in this browser — use the text box below instead.</p>;
   }
   return (<div className="flex items-center gap-3">
-    <button onClick={toggle} className={"rounded-full px-4 py-2 font-semibold " + (listening ? "bg-red-500 text-white animate-pulse" : "bg-slate-700 text-white")}>
+    <PulsatingButton
+      onClick={toggle}
+      variant="ripple"
+      pulseColor={listening ? "#ef4444" : "#10b981"}
+      className={"px-4 py-2 font-semibold rounded-full " + (listening ? "bg-red-500 text-white" : "bg-slate-700 text-white")}
+    >
       {listening ? "⏹ Stop" : "🎙️ Speak"}
-    </button>
+    </PulsatingButton>
     {liveText && <p className="text-sm italic text-slate-400">{liveText}</p>}
   </div>);
 }
