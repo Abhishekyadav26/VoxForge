@@ -1,0 +1,3 @@
+export default function Home() {
+  return (<main className="space-y-4"><h1 className="text-3xl font-bold">Voice-to-Agent Studio</h1><p className="text-slate-300">Describe a blockchain monitoring agent by voice. See a visual plan, dry-run it, and deploy Telegram alerts (Solana-focused).</p><div className="flex gap-3"><a href="/studio" className="rounded bg-emerald-500 px-4 py-2 font-semibold text-slate-950">Open Studio</a><a href="/agents" className="rounded border border-slate-600 px-4 py-2">View Agents</a></div><ol className="list-decimal space-y-1 pl-6 text-sm text-slate-300"><li>Speak or type: “Alert me when SOL drops below $150”.</li><li>Review the plan graph, edit params, dry-run.</li><li>Deploy — run via API to trigger Telegram alerts.</li></ol></main>);
+}
