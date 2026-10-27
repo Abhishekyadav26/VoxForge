@@ -1,6 +1,6 @@
 import { promises as fs } from "fs";
 import path from "path";
-import Anthropic from "@anthropic-ai/sdk";
+import Groq from "groq-sdk";
 import { AgentSpec, AgentSpecSchema } from "./spec-schema";
 
 const DEFAULT_TRIGGER = { type: "interval", every: "60s" } as const;
@@ -132,45 +132,45 @@ export function extractSpecLocal(transcript: string): AgentSpec {
   return AgentSpecSchema.parse(spec);
 }
 
-// ---------- Claude-based extractor (used when ANTHROPIC_API_KEY present) ----------
-async function extractSpecWithClaude(transcript: string): Promise<AgentSpec> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error("ANTHROPIC_API_KEY not set");
-  const client = new Anthropic({ apiKey });
+// ---------- Groq-based extractor (used when GROQ_API_KEY present) ----------
+async function extractSpecWithGroq(transcript: string): Promise<AgentSpec> {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) throw new Error("GROQ_API_KEY not set");
+  const groq = new Groq({ apiKey });
   const system = await fs.readFile(PROMPT_FILE, "utf8");
 
   const attempt = async (): Promise<AgentSpec> => {
-    const res = await client.messages.create({
-      model: process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-5",
+    const res = await groq.chat.completions.create({
+      model: process.env.GROQ_MODEL ?? "llama-3.3-70b-versatile",
+      response_format: { type: "json_object" },
       max_tokens: 1500,
-      system,
-      messages: [{ role: "user", content: transcript }],
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: transcript },
+      ],
     });
-    const text = res.content
-      .filter((b) => b.type === "text")
-      .map((b) => b.text)
-      .join("");
+    const text = res.choices?.[0]?.message?.content ?? "";
     return AgentSpecSchema.parse(JSON.parse(text));
   };
 
   try {
     return await attempt();
   } catch (e) {
-    console.warn("Claude extract attempt 1 failed, retrying once…", e);
+    console.warn("Groq extract attempt 1 failed, retrying once…", e);
     return await attempt(); // retry once on validation failure / malformed JSON
   }
 }
 
 /**
- * Main entry: prefer Claude (accurate NLU), fall back to the rule-based
+ * Main entry: prefer Groq (accurate NLU), fall back to the rule-based
  * extractor so the app works offline / without an API key.
  */
 export async function extractSpec(transcript: string): Promise<AgentSpec> {
-  if (process.env.ANTHROPIC_API_KEY) {
+  if (process.env.GROQ_API_KEY) {
     try {
-      return await extractSpecWithClaude(transcript);
+      return await extractSpecWithGroq(transcript);
     } catch (e) {
-      console.warn("Claude extraction failed, using local extractor:", e);
+      console.warn("Groq extraction failed, using local extractor:", e);
     }
   }
   return extractSpecLocal(transcript);

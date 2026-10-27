@@ -1,6 +1,6 @@
 import { promises as fs } from "fs";
 import path from "path";
-import Anthropic from "@anthropic-ai/sdk";
+import Groq from "groq-sdk";
 import { AgentSpec } from "./spec-schema";
 
 const PROMPT_FILE = path.join(process.cwd(), "code-generator-prompt.md");
@@ -56,42 +56,41 @@ ${messages}
 `;
 }
 
-/** Claude-based generation — used when an API key is set. */
-async function generateCodeWithClaude(spec: AgentSpec): Promise<string> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error("ANTHROPIC_API_KEY not set");
-  const client = new Anthropic({ apiKey });
+/** Groq-based generation — used when an API key is set. */
+async function generateCodeWithGroq(spec: AgentSpec): Promise<string> {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) throw new Error("GROQ_API_KEY not set");
+  const groq = new Groq({ apiKey });
   const system = await fs.readFile(PROMPT_FILE, "utf8");
 
   const attempt = async (): Promise<string> => {
-    const res = await client.messages.create({
-      model: process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-5",
+    const res = await groq.chat.completions.create({
+      model: process.env.GROQ_MODEL ?? "llama-3.3-70b-versatile",
       max_tokens: 2500,
-      system,
-      messages: [{ role: "user", content: JSON.stringify(spec, null, 2) }],
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: JSON.stringify(spec, null, 2) },
+      ],
     });
-    return res.content
-      .filter((b) => b.type === "text")
-      .map((b) => b.text)
-      .join("");
+    return res.choices?.[0]?.message?.content ?? "";
   };
 
   try {
     return await attempt();
   } catch (e) {
-    console.warn("Claude code gen attempt 1 failed, retrying once…", e);
+    console.warn("Groq code gen attempt 1 failed, retrying once…", e);
     return await attempt();
   }
 }
 
-/** Claude first, deterministic template as fallback — app always works. */
+/** Groq first, deterministic template as fallback — app always works. */
 export async function generateCodeBestEffort(spec: AgentSpec): Promise<string> {
-  if (process.env.ANTHROPIC_API_KEY) {
+  if (process.env.GROQ_API_KEY) {
     try {
-      const code = await generateCodeWithClaude(spec);
+      const code = await generateCodeWithGroq(spec);
       if (code.trim()) return code;
     } catch (e) {
-      console.warn("Claude code generation failed, using template:", e);
+      console.warn("Groq code generation failed, using template:", e);
     }
   }
   return generateCode(spec);

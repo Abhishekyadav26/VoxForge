@@ -49,6 +49,7 @@ async function main() {
 
   // 5. Interpreter: percent-change fires + Telegram message rendered (dry).
   // The spec has a MISSING address placeholder, so give it a valid one first.
+  // Balance comes from the real Solana RPC (or mock if unreachable).
   const t2real: typeof t2 = {
     ...t2,
     steps: t2.steps.map((s) =>
@@ -60,7 +61,7 @@ async function main() {
   const r2 = await runSpec(t2real, { dryRun: true, mockActualChange: -12 });
   assert.strictEqual(r2.success, true);
   assert.strictEqual(r2.triggered, true);
-  assert(r2.messages.length > 0 && r2.messages[0].includes("10.5"));
+  assert(r2.messages.length > 0 && r2.messages[0].includes("Balance:"));
   console.log("✔ interpreter triggered:", r2.messages[0]);
   assert.strictEqual(r1.messages.length, 0);
 

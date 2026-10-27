@@ -1,8 +1,10 @@
+import { CoinMarketCap } from "@coinmarketcap/sdk";
+
 // Simple price cache (15-30s) to avoid rate limits.
-const cache = new Map<string, { price: number; at: number }>();
+const cache = new Map<string, { price: number; timestamp: string; at: number }>();
 const TTL_MS = 20_000;
 
-// Mock prices for dry-run / no-key mode. Real wiring: Jupiter/Helius.
+// Last-resort fallback when no COINMARKETCAP_API_KEY is set or the API fails.
 const MOCK_PRICES: Record<string, number> = {
   SOL: 151.5,
   ETH: 2950,
@@ -10,18 +12,73 @@ const MOCK_PRICES: Record<string, number> = {
   BTC: 67000,
 };
 
+// Lazy client — only constructed when a key is present.
+let cmcClient: CoinMarketCap | null | undefined;
+
+function getCmc(): CoinMarketCap | null {
+  if (cmcClient !== undefined) return cmcClient;
+  const apiKey = process.env.COINMARKETCAP_API_KEY;
+  cmcClient = apiKey ? new CoinMarketCap({ apiKey }) : null;
+  return cmcClient;
+}
+
+/**
+ * Current price of a token via the official CoinMarketCap Pro SDK
+ * (GET /v3/cryptocurrency/quotes/latest, one quote per convert currency).
+ * Falls back to mock data when no API key is set or the call fails.
+ */
 export async function getPrice(
   token: string,
   currency = "USD"
 ): Promise<{ price: number; timestamp: string }> {
   const sym = token.toUpperCase();
-  const key = `${sym}/${currency}`;
+  const conv = currency.toUpperCase();
+  const key = `${sym}/${conv}`;
   const hit = cache.get(key);
   if (hit && Date.now() - hit.at < TTL_MS) {
-    return { price: hit.price, timestamp: new Date().toISOString() };
+    return { price: hit.price, timestamp: hit.timestamp };
   }
-  // TODO: wire Jupiter price API here when HELIUS/Jupiter keys present.
+
+  const client = getCmc();
+  if (client) {
+    try {
+      // SDK result unions throwOnError variants; cast to the shape we consume
+      // (confirmed from the generated types: body.data is CryptoQuoteV3Dto[]).
+      type CmcQuoteResult = {
+        data?: {
+          data?: Array<{
+            symbol?: string;
+            quote?: Array<{ symbol?: string; price?: number; last_updated?: string }>;
+          }>;
+        };
+        error?: unknown;
+      };
+      const { data, error } = (await client.api.cryptocurrency.quotesLatest({
+        query: { symbol: sym, convert: conv },
+      })) as CmcQuoteResult;
+      if (error) {
+        throw new Error(
+          typeof error === "string" ? error : JSON.stringify(error).slice(0, 200)
+        );
+      }
+      // The SDK returns the full response body: { data: CryptoQuoteV3Dto[], status }.
+      const entries = data?.data;
+      const entry = entries?.find((d) => d.symbol?.toUpperCase() === sym);
+      const quote = entry?.quote?.find((q) => q.symbol?.toUpperCase() === conv);
+      const price = quote?.price;
+      if (typeof price !== "number") {
+        throw new Error(`No CoinMarketCap quote found for ${sym} in ${conv}`);
+      }
+      const timestamp = quote?.last_updated ?? new Date().toISOString();
+      cache.set(key, { price, timestamp, at: Date.now() });
+      return { price, timestamp };
+    } catch (e) {
+      console.warn(`[price] CoinMarketCap failed for ${key}, using fallback:`, e);
+    }
+  }
+
   const price = MOCK_PRICES[sym] ?? 100;
-  cache.set(key, { price, at: Date.now() });
-  return { price, timestamp: new Date().toISOString() };
+  const timestamp = new Date().toISOString();
+  cache.set(key, { price, timestamp, at: Date.now() });
+  return { price, timestamp };
 }

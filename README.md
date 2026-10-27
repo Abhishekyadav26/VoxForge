@@ -19,7 +19,7 @@ npm run test:engine
 ## Flow
 
 1. **Studio** (`/studio`) — speak or type *"Alert me on Telegram when SOL drops below $150"*.
-2. **Extract** — `/api/extract-spec` turns text into a validated AgentSpec (Claude API when `ANTHROPIC_API_KEY` is set, rule-based fallback otherwise).
+2. **Extract** — `/api/extract-spec` turns text into a validated AgentSpec (Groq when `GROQ_API_KEY` is set, rule-based fallback otherwise).
 3. **Visualize** — PlanGraph shows steps → conditions → Telegram action; click a node to edit its params (`EditSpecPanel`).
 4. **Dry-run** — `/api/test-spec` executes the graph with mock data and prints a trace ("s1: SOL = $151.50. s2: 151.5 < 150? NO").
 5. **Deploy** — fills missing fields (wallet address), saves to `data/agents.json` (`/api/deploy-agent`), then run any time via `/api/run-agent` (mapped to `RunButton` on `/agents/[id]`).
@@ -41,8 +41,11 @@ scripts/test-engine.ts        — offline smoke test
 | Variable | Purpose | If missing |
 |---|---|---|
 | `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` | Send alerts | logs instead |
-| `ANTHROPIC_API_KEY` | Claude text→spec | rule-based extractor |
-| `HELIUS_API_KEY` | Real on-chain data | mock prices/balances |
+| `COINMARKETCAP_API_KEY` | Live prices (official CMC Pro SDK) | mock prices |
+| `GROQ_API_KEY` | Groq text→spec (llama) | rule-based extractor |
+| `GROQ_MODEL` | Groq model id | `llama-3.3-70b-versatile` |
+
+**Data sources:** prices use the official [`@coinmarketcap/sdk`](https://www.npmjs.com/package/@coinmarketcap/sdk) (`quotes/latest`); wallet balances use the public Solana RPC (`api.mainnet-beta.solana.com`) — no Helius/Jupiter keys needed.
 
 ## Safety
 

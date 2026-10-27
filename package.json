@@ -10,12 +10,13 @@
     "test:engine": "npx tsx scripts/test-engine.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.32.1",
+    "@coinmarketcap/sdk": "^5.0.0",
+    "groq-sdk": "^1.6.0",
     "next": "14.2.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "zod": "^3.23.8",
-    "reactflow": "^11.11.3"
+    "reactflow": "^11.11.3",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/node": "^20.12.12",
