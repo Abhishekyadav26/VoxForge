@@ -1,3 +1,60 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ------------------------------------------------------------------ */
+/* View Transitions (next-view-transitions, Next.js App Router)        */
+/* Route changes cross-fade; the agent card morphs into the detail     */
+/* title via a shared view-transition-name. Unsupported browsers       */
+/* simply skip all animations.                                         */
+/* ------------------------------------------------------------------ */
+
+:root {
+  --duration-exit: 150ms;
+  --duration-enter: 210ms;
+  --duration-move: 400ms;
+}
+
+@keyframes vt-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Pass clicks through while snapshots are in flight */
+::view-transition {
+  pointer-events: none;
+}
+
+/* Route change: subtle cross-fade of the whole page */
+::view-transition-old(root) {
+  animation: 150ms ease-in vt-fade reverse;
+}
+::view-transition-new(root) {
+  animation: 210ms ease-out 150ms both vt-fade;
+}
+
+/* Shared element (agent card → detail title).
+   Text at different sizes raster-morphs with a ghost artifact, so hide
+   the old snapshot and keep the new text crisp while the group box
+   glides to its target size/position. */
+::view-transition-group(.agent-card) {
+  animation-duration: var(--duration-move);
+}
+::view-transition-old(.agent-card) {
+  display: none;
+}
+::view-transition-new(.agent-card) {
+  animation: none;
+  object-fit: none;
+  object-position: left top;
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+}

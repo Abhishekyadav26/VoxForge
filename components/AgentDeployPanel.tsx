@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { Link } from "next-view-transitions";
 import type { AgentSpec } from "@/lib/spec-schema";
 
 interface Props { spec: AgentSpec; onSpecChange: (s: AgentSpec) => void; }
@@ -33,6 +34,6 @@ export default function AgentDeployPanel({ spec, onSpecChange }: Props) {
     {needsAddress && addrStep && (<div><label className="mb-1 block text-xs text-slate-400">Solana wallet address (required)</label><input value={(addrStep.params as any).address === "MISSING_WALLET_ADDRESS" ? "" : (addrStep.params as any).address} onChange={(e) => setAddress(e.target.value)} placeholder="Paste your Solana address…" className="w-full rounded border border-amber-500 bg-slate-900 p-2 text-sm outline-none focus:border-emerald-500" /></div>)}
     <button onClick={deploy} disabled={loading} className="rounded bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-50">{loading ? "Deploying…" : "🚀 Deploy agent"}</button>
     {error && <p className="text-sm text-red-400">{error}</p>}
-    {result && (<p className="text-sm text-emerald-400">Deployed! <a href={"/agents/" + result.id} className="underline">View agent →</a></p>)}
+    {result && (<p className="text-sm text-emerald-400">Deployed! <Link href={"/agents/" + result.id} className="underline">View agent →</Link></p>)}
   </section>);
 }

@@ -48,11 +48,17 @@ scripts/test-engine.ts        — offline smoke test
 
 **Data sources:** prices use the official [`@coinmarketcap/sdk`](https://www.npmjs.com/package/@coinmarketcap/sdk) (`quotes/latest`); wallet balances use the public Solana RPC (`api.mainnet-beta.solana.com`) — no Helius/Jupiter keys needed.
 
-## Safety
+## UI
+
+- **Route transitions** via the native View Transitions API (`next-view-transitions`): pages cross-fade; the agent card **morphs into the detail title** via a shared `view-transition-name` (`agent-card-<id>`). Reduced-motion preferences are respected; unsupported browsers skip animations entirely.
 
 - The interpreter/generator only execute the fixed block set — never arbitrary user code.
 - Private keys never enter specs or the DB; Telegram chat ID comes from env, not the spec.
 - Wallet addresses are validated before use; placeholders are flagged as `missingFields`.
+
+## Safety
+
+- The interpreter/generator only execute the fixed block set — never arbitrary user code.
 
 ## Scope (MVP)
 
