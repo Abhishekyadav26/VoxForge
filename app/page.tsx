@@ -2,6 +2,7 @@ import { getPrice } from "@/lib/blocks/price";
 import { listAgents } from "@/lib/db";
 import { Link } from "next-view-transitions";
 import { NumberTicker } from "@/components/ui/number-ticker";
+import { GlyphMatrix } from "@/components/ui/glyph-matrix";
 import { TokenStatCard } from "@/components/TokenStatCard";
 import HomeHero from "@/components/HomeHero";
 import HomeFeatures from "@/components/HomeFeatures";
@@ -105,6 +106,44 @@ export default async function Home() {
           </Link>
         </section>
       </main>
+
+      {/* ------------ END PAGE: glyph matrix ------------ */}
+      <section className="relative grid min-h-[70vh] place-items-center overflow-hidden border-t border-slate-800 bg-slate-950">
+        <GlyphMatrix
+          className="absolute inset-0"
+          color="#10b981"
+          cellSize={18}
+          mutationRate={0.05}
+          interval={80}
+          fadeBottom={0.4}
+        />
+        <div className="relative mx-auto max-w-3xl px-4 py-24 text-center">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-emerald-400">
+            Built with Voice-to-Agent Studio
+          </p>
+          <h2 className="text-3xl font-bold leading-tight tracking-tight sm:text-5xl">
+            The matrix is watching SOL …
+          </h2>
+          <p className="mx-auto mt-4 max-w-md text-sm text-slate-300">
+            No keys required to start — speak, see the plan, dry-run against fallback prices.
+            Add CoinMarketCap + Groq + Telegram keys when you're ready for live fire.
+          </p>
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <Link
+              href="/studio"
+              className="rounded-lg bg-emerald-500 px-8 py-3 font-semibold text-slate-950 transition hover:bg-emerald-400"
+            >
+              Start building →
+            </Link>
+            <Link
+              href="/agents"
+              className="rounded-lg border border-slate-600 px-8 py-3 text-slate-200 transition hover:border-emerald-500"
+            >
+              View agents {agents.length > 0 && `(${agents.length})`}
+            </Link>
+          </div>
+        </div>
+      </section>
     </>
   );
 }
