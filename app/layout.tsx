@@ -24,6 +24,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <Link href="/agents" className="hover:text-white">
                   Agents
                 </Link>
+                <Link href="/demo" className="hover:text-white">
+                  Demo
+                </Link>
               </nav>
             </header>
             {children}
