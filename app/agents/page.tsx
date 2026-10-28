@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 export default async function AgentsPage() {
   const agents = await listAgents();
   return (
-    <main className="space-y-4">
+    <main className="mx-auto max-w-5xl space-y-4 px-4 pt-20">
       <h1 className="text-2xl font-bold">
         Agents ({agents.length})
       </h1>

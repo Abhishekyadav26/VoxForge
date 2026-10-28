@@ -25,7 +25,7 @@ export default function StudioPage() {
     } catch (e: any) { setError(e.message); } finally { setLoading(false); }
   }
 
-  return (<main className="space-y-5">
+  return (<main className="mx-auto max-w-5xl space-y-5 px-4 pt-20">
     <h1 className="text-2xl font-bold">Studio</h1>
     <VoiceRecorder onTranscript={(t) => setTranscript((prev) => prev ? prev + " " + t : t)} />
     <TranscriptPanel transcript={transcript} onChange={setTranscript} />

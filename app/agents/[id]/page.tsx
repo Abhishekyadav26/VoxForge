@@ -9,7 +9,7 @@ export default async function AgentDetail({ params }: { params: { id: string } }
   const agent = await getAgent(params.id);
   if (!agent)
     return (
-      <main>
+      <main className="mx-auto max-w-5xl space-y-4 px-4 pt-20">
         <p>Agent not found.</p>
         <Link href="/agents" className="underline">
           Back
@@ -18,7 +18,7 @@ export default async function AgentDetail({ params }: { params: { id: string } }
     );
   const runs = await listRuns(agent.id);
   return (
-    <main className="space-y-4">
+    <main className="mx-auto max-w-5xl space-y-4 px-4 pt-20">
       <Link href="/agents" className="vt-back text-sm text-slate-400 hover:text-white">
         ← Agents
       </Link>
