@@ -6,6 +6,7 @@ import { GlyphMatrix } from "@/components/ui/glyph-matrix";
 import { TokenStatCard } from "@/components/TokenStatCard";
 import HomeHero from "@/components/HomeHero";
 import HomeFeatures from "@/components/HomeFeatures";
+import { Button } from "@/components/ui/button";
 
 export const dynamic = "force-dynamic";
 
@@ -98,12 +99,11 @@ export default async function Home() {
             No keys required to start — speak, see the plan, dry-run against fallback prices.
             Add CoinMarketCap + Groq + Telegram keys when you're ready for live fire.
           </p>
-          <Link
-            href="/studio"
-            className="mt-6 inline-block rounded-lg bg-slate-100 px-8 py-3 font-semibold text-slate-950 transition hover:bg-white"
-          >
-            Start building →
-          </Link>
+          <Button asChild className="mt-6">
+            <Link href="/studio">
+              Start building →
+            </Link>
+          </Button>
         </section>
       </main>
 
@@ -129,18 +129,12 @@ export default async function Home() {
             Add CoinMarketCap + Groq + Telegram keys when you're ready for live fire.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Link
-              href="/studio"
-              className="rounded-lg bg-slate-100 px-8 py-3 font-semibold text-slate-950 transition hover:bg-white"
-            >
-              Start building →
-            </Link>
-            <Link
-              href="/agents"
-              className="rounded-lg border border-slate-600 px-8 py-3 text-slate-200 transition hover:border-slate-300"
-            >
-              View agents {agents.length > 0 && `(${agents.length})`}
-            </Link>
+            <Button asChild>
+              <Link href="/studio">Start building →</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/agents">View agents {agents.length > 0 && `(${agents.length})`}</Link>
+            </Button>
           </div>
         </div>
       </section>

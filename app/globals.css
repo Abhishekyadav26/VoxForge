@@ -3,6 +3,36 @@
 @tailwind utilities;
 
 /* ------------------------------------------------------------------ */
+/* shadcn/ui design tokens — neutral grays so the app stays strictly    */
+/* black & white (hue 0, saturation 0 everywhere).                     */
+/* ------------------------------------------------------------------ */
+
+@layer base {
+  :root {
+    --background: 0 0% 4.3%;
+    --foreground: 0 0% 93.3%;
+    --card: 0 0% 9.4%;
+    --card-foreground: 0 0% 93.3%;
+    --popover: 0 0% 9.4%;
+    --popover-foreground: 0 0% 93.3%;
+    --primary: 0 0% 93.3%;
+    --primary-foreground: 0 0% 4.3%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 93.3%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 55.3%;
+    --accent: 0 0% 19.6%;
+    --accent-foreground: 0 0% 93.3%;
+    --destructive: 0 0% 38%;
+    --destructive-foreground: 0 0% 93.3%;
+    --border: 0 0% 16.5%;
+    --input: 0 0% 16.5%;
+    --ring: 0 0% 93.3%;
+    --radius: 0.5rem;
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /* Ink-orbit theme (dark) — the look of the hero/features components,    */
 /* applied to the app shell: hatched page, Manrope sans + JetBrains Mono */
 /* labels, muted grays. Colors come from the remapped slate scale.   */

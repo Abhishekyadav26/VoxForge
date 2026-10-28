@@ -1,6 +1,7 @@
 "use client";
 import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 
 export interface TokenStatCardProps {
   /** Token symbol, e.g. "SOL" */
@@ -94,16 +95,9 @@ export function TokenStatCard({
             <p className="text-xl font-bold tracking-tight">
               {displayName} <span className="text-slate-400">/ {sym}</span>
             </p>
-            <span
-              className={cn(
-                "rounded-full px-2 py-0.5 text-xs font-semibold",
-                triggered
-                  ? "bg-slate-500/20 text-slate-200"
-                  : "bg-slate-500/20 text-slate-200"
-              )}
-            >
+            <Badge variant={triggered ? "secondary" : "outline"}>
               {triggered ? "would fire" : "✓ safe"}
-            </span>
+            </Badge>
           </div>
           <p className="mt-1 text-sm text-slate-400">Live price via CoinMarketCap</p>
         </div>

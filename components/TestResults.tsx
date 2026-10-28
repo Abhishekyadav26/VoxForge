@@ -3,6 +3,7 @@ import { useState } from "react";
 import { NumberTicker } from "@/components/ui/number-ticker";
 import { TokenStatCard } from "@/components/TokenStatCard";
 import { Play } from "@/components/icons";
+import { Button } from "@/components/ui/button";
 import type { AgentSpec } from "@/lib/spec-schema";
 
 interface TraceLine { stepId: string; block: string; detail: string; output: Record<string, unknown>; }
@@ -23,7 +24,7 @@ export default function TestResults({ spec }: { spec: AgentSpec }) {
   }
   return (<section className="space-y-2">
     <h2 className="text-lg font-semibold">Dry Run</h2>
-    <button onClick={dryRun} disabled={loading} className="inline-flex items-center gap-1.5 rounded bg-slate-700 px-4 py-2 text-sm font-semibold disabled:opacity-50"><Play size={13} />{loading ? "Running…" : "Run trace"}</button>
+    <Button size="sm" variant="secondary" onClick={dryRun} disabled={loading}><Play />{loading ? "Running…" : "Run trace"}</Button>
     {error && <p className="text-sm text-slate-300">{error}</p>}
     {state?.trace && (() => {
       const priceStep = (state.trace as any[]).find((t: any) => t.output && typeof t.output.price === "number");

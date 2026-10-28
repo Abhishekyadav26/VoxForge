@@ -1,6 +1,10 @@
 "use client";
 import { useState } from "react";
 import { Link } from "next-view-transitions";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import type { AgentSpec } from "@/lib/spec-schema";
 
 interface Props { spec: AgentSpec; onSpecChange: (s: AgentSpec) => void; }
@@ -30,9 +34,9 @@ export default function AgentDeployPanel({ spec, onSpecChange }: Props) {
   }
   return (<section className="space-y-2 rounded border border-slate-700 p-4">
     <h2 className="text-lg font-semibold">Deploy</h2>
-    {missing.length > 0 && (<div className="flex flex-wrap gap-2">{missing.map((f) => <span key={f} className="rounded bg-slate-500/20 px-2 py-1 text-xs text-slate-200">{f}</span>)}</div>)}
-    {needsAddress && addrStep && (<div><label className="mb-1 block text-xs text-slate-400">Solana wallet address (required)</label><input value={(addrStep.params as any).address === "MISSING_WALLET_ADDRESS" ? "" : (addrStep.params as any).address} onChange={(e) => setAddress(e.target.value)} placeholder="Paste your Solana address…" className="w-full rounded border border-slate-500 bg-slate-900 p-2 text-sm outline-none focus:border-slate-300" /></div>)}
-    <button onClick={deploy} disabled={loading} className="rounded bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-50">{loading ? "Deploying…" : "Deploy agent"}</button>
+    {missing.length > 0 && (<div className="flex flex-wrap gap-2">{missing.map((f) => <Badge key={f} variant="secondary">{f}</Badge>)}</div>)}
+    {needsAddress && addrStep && (<div className="space-y-1"><Label className="text-xs text-slate-400">Solana wallet address (required)</Label><Input value={(addrStep.params as any).address === "MISSING_WALLET_ADDRESS" ? "" : (addrStep.params as any).address} onChange={(e) => setAddress(e.target.value)} placeholder="Paste your Solana address…" className="bg-slate-800" /></div>)}
+    <Button onClick={deploy} disabled={loading}>{loading ? "Deploying…" : "Deploy agent"}</Button>
     {error && <p className="text-sm text-slate-300">{error}</p>}
     {result && (<p className="text-sm text-slate-200">Deployed! <Link href={"/agents/" + result.id} className="underline">View agent →</Link></p>)}
   </section>);
