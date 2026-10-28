@@ -3,6 +3,39 @@
 @tailwind utilities;
 
 /* ------------------------------------------------------------------ */
+/* Ink-orbit theme (dark) — the look of the hero/features components,    */
+/* applied to the app shell: hatched page, Manrope sans + JetBrains Mono */
+/* labels, muted grays. Colors come from the remapped slate scale.   */
+/* ------------------------------------------------------------------ */
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  font-family: "Manrope", "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  background-color: #0b0b0b;
+  background-image: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 10px);
+}
+
+::selection {
+  background: rgba(238, 238, 238, 0.9);
+  color: #0b0b0b;
+}
+
+:where(a, button, [tabindex]):focus-visible {
+  outline: 2px solid #eeeeee;
+  outline-offset: 2px;
+}
+
+/* slim dark scrollbar to match */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #2a2a2a #0b0b0b;
+}
+
+/* ------------------------------------------------------------------ */
 /* View Transitions (next-view-transitions, Next.js App Router)        */
 /* Route changes cross-fade; the agent card morphs into the detail     */
 /* title via a shared view-transition-name. Unsupported browsers       */
