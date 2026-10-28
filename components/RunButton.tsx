@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { Play } from "@/components/icons";
 export default function RunButton({ agentId }: { agentId: string }) {
   const [state, setState] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
@@ -14,8 +15,8 @@ export default function RunButton({ agentId }: { agentId: string }) {
     } catch (e: any) { setError(e.message); } finally { setLoading(false); }
   }
   return (<div className="space-y-2">
-    <button onClick={runNow} disabled={loading} className="rounded bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-50">{loading ? "Running…" : "▶ Run now (dry)"}</button>
-    {error && <p className="text-sm text-red-400">{error}</p>}
-    {state && <p className={"text-sm " + (state.triggered ? "text-emerald-400" : "text-slate-400")}>{state.triggered ? "🔔 Triggered — alert sent" : "No trigger — conditions not met"}</p>}
+    <button onClick={runNow} disabled={loading} className="inline-flex items-center gap-1.5 rounded bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-50"><Play size={13} />{loading ? "Running…" : "Run now (dry)"}</button>
+    {error && <p className="text-sm text-slate-300">{error}</p>}
+    {state && <p className={"text-sm " + (state.triggered ? "text-slate-200" : "text-slate-400")}>{state.triggered ? "Triggered — alert sent" : "No trigger — conditions not met"}</p>}
   </div>);
 }

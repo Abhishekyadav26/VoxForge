@@ -20,7 +20,7 @@ export default function AnimatedRuns({ runs }: { runs: RunItem[] }) {
               <span className="mx-2 text-slate-600">·</span>
               {r.executedAt} —{" "}
               {r.triggered ? (
-                <span className="font-semibold text-emerald-400">🔔 triggered</span>
+                <span className="font-semibold text-slate-200">triggered</span>
               ) : (
                 <span className="text-slate-400">no trigger</span>
               )}

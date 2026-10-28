@@ -27,7 +27,7 @@ export default function HomeHero() {
         titleTop="Speak an alert."
         titleAccent={["Ship a monitor.", "Watch SOL move.", "Never miss a dip.", "Get pinged instantly."]}
         description="Describe a blockchain monitoring agent in plain words — “warn me when SOL drops below $100” — review the visual plan, dry-run it against live prices, and deploy a Telegram alert."
-        primaryCta="🎙️ Open Studio"
+        primaryCta="Open Studio"
         onPrimary={() => router.push("/studio")}
         secondaryCta="Watch Demo"
         proof={{ before: "Trusted by", value: "12,400+", after: "agents daily" }}

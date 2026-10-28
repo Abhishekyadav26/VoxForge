@@ -6,6 +6,7 @@ import PlanGraph from "@/components/PlanGraph";
 import EditSpecPanel from "@/components/EditSpecPanel";
 import TestResults from "@/components/TestResults";
 import AgentDeployPanel from "@/components/AgentDeployPanel";
+import { Bolt } from "@/components/icons";
 import type { AgentSpec } from "@/lib/spec-schema";
 
 export default function StudioPage() {
@@ -29,8 +30,8 @@ export default function StudioPage() {
     <h1 className="text-2xl font-bold">Studio</h1>
     <VoiceRecorder onTranscript={(t) => setTranscript((prev) => prev ? prev + " " + t : t)} />
     <TranscriptPanel transcript={transcript} onChange={setTranscript} />
-    <button onClick={extract} disabled={loading || !transcript.trim()} className="rounded bg-emerald-500 px-4 py-2 font-semibold text-slate-950 disabled:opacity-50">{loading ? "Extracting…" : "⚡ Generate Plan"}</button>
-    {error && <p className="text-sm text-red-400">Error: {error}</p>}
+    <button onClick={extract} disabled={loading || !transcript.trim()} className="inline-flex items-center gap-1.5 rounded bg-slate-100 px-4 py-2 font-semibold text-slate-950 disabled:opacity-50"><Bolt size={14} />{loading ? "Extracting…" : "Generate Plan"}</button>
+    {error && <p className="text-sm text-slate-300">Error: {error}</p>}
     {spec && (<>
       <PlanGraph spec={spec} onSelectStep={(id) => { setSelectedStep(id); }} />
       <EditSpecPanel spec={spec} stepId={selectedStep} onSave={setSpec} />

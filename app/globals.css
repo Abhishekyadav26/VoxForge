@@ -101,7 +101,7 @@ body {
 
 @keyframes pulse-ripple {
   0% {
-    box-shadow: 0 0 0 0 var(--pulse-color, #10b981);
+    box-shadow: 0 0 0 0 var(--pulse-color, #8d8d8d);
   }
   100% {
     box-shadow: 0 0 0 var(--distance, 8px) transparent;

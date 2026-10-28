@@ -39,7 +39,7 @@ function formatCurrency(value: number, currency = "USD"): string {
 /**
  * Adapted from 21st.dev Asset Card (ravikatiyar162/asset-card, id 7945).
  * Two-panel layout: gradient status panel (left) + data panel (right),
- * framer-motion hover lift. `triggered=false` = emerald (safe), `true` = red.
+ * framer-motion hover lift. `triggered=false` = neutral (safe), `true` = red.
  */
 export function TokenStatCard({
   ticker,
@@ -68,8 +68,8 @@ export function TokenStatCard({
       <div
         className={cn(
           "flex w-2/5 flex-col justify-between bg-gradient-to-br p-4 text-white",
-          triggered ? "from-red-600" : "from-emerald-600",
-          triggered ? "to-red-950" : "to-emerald-950"
+          triggered ? "from-slate-600" : "from-slate-600",
+          triggered ? "to-slate-900" : "to-slate-900"
         )}
       >
         {/* Token monogram */}
@@ -98,11 +98,11 @@ export function TokenStatCard({
               className={cn(
                 "rounded-full px-2 py-0.5 text-xs font-semibold",
                 triggered
-                  ? "bg-red-500/20 text-red-400"
-                  : "bg-emerald-500/20 text-emerald-400"
+                  ? "bg-slate-500/20 text-slate-200"
+                  : "bg-slate-500/20 text-slate-200"
               )}
             >
-              {triggered ? "🔔 would fire" : "✓ safe"}
+              {triggered ? "would fire" : "✓ safe"}
             </span>
           </div>
           <p className="mt-1 text-sm text-slate-400">Live price via CoinMarketCap</p>

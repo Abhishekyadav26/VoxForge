@@ -23,7 +23,7 @@ export default async function AgentsPage() {
         <Link
           key={a.id}
           href={"/agents/" + a.id}
-          className="block rounded border border-slate-700 p-4 hover:border-emerald-500"
+          className="block rounded border border-slate-700 p-4 hover:border-slate-300"
           style={
             { viewTransitionName: "agent-card-" + a.id, viewTransitionClass: "agent-card" } as React.CSSProperties
           }

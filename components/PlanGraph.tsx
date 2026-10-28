@@ -6,9 +6,9 @@ import { BorderBeam } from "@/components/ui/border-beam";
 import type { AgentSpec } from "@/lib/spec-schema";
 
 const KIND_STYLE: Record<string, { bg: string; fg: string }> = {
-  step: { bg: "#64748b", fg: "#fff" },
-  condition: { bg: "#f59e0b", fg: "#1f2937" },
-  action: { bg: "#10b981", fg: "#fff" },
+  step: { bg: "#8d8d8d", fg: "#fff" },
+  condition: { bg: "#c9c9c9", fg: "#0b0b0b" },
+  action: { bg: "#c9c9c9", fg: "#0b0b0b" },
 };
 
 function SpecNode({ data }: { data: { label: string; kind: string } }) {
@@ -37,7 +37,7 @@ export default function PlanGraph({ spec, onSelectStep }: Props) {
       id: s.id, type: "specNode", position: { x: 0, y: i * 90 },
       data: { label: summarize(s), kind: s.block.startsWith("condition.") ? "condition" : "step" },
     }));
-    ns.push({ id: "action", type: "specNode", position: { x: 340, y: Math.max(0, spec.steps.length - 1) * 90 }, data: { label: "notify.telegram → 📨", kind: "action" } });
+    ns.push({ id: "action", type: "specNode", position: { x: 340, y: Math.max(0, spec.steps.length - 1) * 90 }, data: { label: "notify.telegram", kind: "action" } });
     const es: Edge[] = [];
     const ref = (v: string) => v.match(/(s\d+)/)?.[1] ?? null;
     spec.steps.forEach((s) => {
@@ -54,15 +54,15 @@ export default function PlanGraph({ spec, onSelectStep }: Props) {
   }, [spec]);
 
   return (<div className="relative overflow-hidden rounded border border-slate-700 p-2">
-    <BorderBeam size={220} duration={10} colorFrom="#10b981" colorTo="#f59e0b" />
+    <BorderBeam size={220} duration={10} colorFrom="#8d8d8d" colorTo="#3a3a3a" />
     <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} fitView onNodeClick={(_, n) => onSelectStep(n.id === "action" ? null : n.id)}>
       <Background gap={16} />
       <Controls />
     </ReactFlow>
     <div className="mt-1 flex gap-4 px-2 py-1 text-xs text-slate-400">
-      <span><span className="mr-1 inline-block h-3 w-3 rounded" style={{ background: "#64748b" }} />step</span>
-      <span><span className="mr-1 inline-block h-3 w-3 rounded" style={{ background: "#f59e0b" }} />condition</span>
-      <span><span className="mr-1 inline-block h-3 w-3 rounded" style={{ background: "#10b981" }} />action</span>
+      <span><span className="mr-1 inline-block h-3 w-3 rounded" style={{ background: "#8d8d8d" }} />step</span>
+      <span><span className="mr-1 inline-block h-3 w-3 rounded" style={{ background: "#c9c9c9" }} />condition</span>
+      <span><span className="mr-1 inline-block h-3 w-3 rounded" style={{ background: "#c9c9c9" }} />action</span>
     </div>
   </div>);
 }

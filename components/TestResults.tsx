@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { NumberTicker } from "@/components/ui/number-ticker";
 import { TokenStatCard } from "@/components/TokenStatCard";
+import { Play } from "@/components/icons";
 import type { AgentSpec } from "@/lib/spec-schema";
 
 interface TraceLine { stepId: string; block: string; detail: string; output: Record<string, unknown>; }
@@ -22,8 +23,8 @@ export default function TestResults({ spec }: { spec: AgentSpec }) {
   }
   return (<section className="space-y-2">
     <h2 className="text-lg font-semibold">Dry Run</h2>
-    <button onClick={dryRun} disabled={loading} className="rounded bg-slate-700 px-4 py-2 text-sm font-semibold disabled:opacity-50">{loading ? "Running…" : "▶ Run trace"}</button>
-    {error && <p className="text-sm text-red-400">{error}</p>}
+    <button onClick={dryRun} disabled={loading} className="inline-flex items-center gap-1.5 rounded bg-slate-700 px-4 py-2 text-sm font-semibold disabled:opacity-50"><Play size={13} />{loading ? "Running…" : "Run trace"}</button>
+    {error && <p className="text-sm text-slate-300">{error}</p>}
     {state?.trace && (() => {
       const priceStep = (state.trace as any[]).find((t: any) => t.output && typeof t.output.price === "number");
       const balStep = (state.trace as any[]).find((t: any) => t.output && typeof t.output.balance === "number");
@@ -45,7 +46,7 @@ export default function TestResults({ spec }: { spec: AgentSpec }) {
           >
             <span className="flex items-baseline gap-2 text-sm text-slate-400">
               Live dry-run price:
-              <span className="text-2xl font-bold tracking-tight text-emerald-400">
+              <span className="text-2xl font-bold tracking-tight text-slate-100">
                 $<NumberTicker value={priceOut.price} decimalPlaces={2} />
               </span>
             </span>
@@ -61,7 +62,7 @@ export default function TestResults({ spec }: { spec: AgentSpec }) {
           >
             <span className="flex items-baseline gap-2 text-sm text-slate-400">
               Wallet balance:
-              <span className="text-2xl font-bold tracking-tight text-emerald-400">
+              <span className="text-2xl font-bold tracking-tight text-slate-100">
                 <NumberTicker value={balOut.balance} decimalPlaces={4} /> SOL
               </span>
             </span>
@@ -70,10 +71,10 @@ export default function TestResults({ spec }: { spec: AgentSpec }) {
       </>);
     })()}
     {state?.trace && (<ol className="space-y-1 rounded border border-slate-700 bg-slate-900 p-3 text-sm">
-      {state.trace.map((t: TraceLine, i: number) => (<li key={i} className="text-slate-300"><span className="font-mono text-emerald-400">{t.stepId}</span> · {t.detail}</li>))}
+      {state.trace.map((t: TraceLine, i: number) => (<li key={i} className="text-slate-300"><span className="font-mono text-slate-100">{t.stepId}</span> · {t.detail}</li>))}
     </ol>)}
-    {state?.triggered !== undefined && (<p className={"text-sm font-semibold " + (state.triggered ? "text-emerald-400" : "text-slate-400")}>{state.triggered ? "🔔 Conditions met — alert would fire" : "✅ Conditions not met — no alert"}</p>)}
-    {state?.messages?.length > 0 && state.messages.map((m: string, i: number) => <div key={i} className="rounded border border-emerald-700 bg-emerald-950/40 p-2 text-sm">{m}<div className="mt-1 text-xs text-slate-400">(dry-run — not sent)</div></div>)}
-    {state?.error && <p className="text-sm text-red-400">{state.error}</p>}
+    {state?.triggered !== undefined && (<p className={"text-sm font-semibold " + (state.triggered ? "text-slate-200" : "text-slate-400")}>{state.triggered ? "Conditions met — alert would fire" : "✓ Conditions not met — no alert"}</p>)}
+    {state?.messages?.length > 0 && state.messages.map((m: string, i: number) => <div key={i} className="rounded border border-slate-600 bg-slate-900/60 p-2 text-sm">{m}<div className="mt-1 text-xs text-slate-400">(dry-run — not sent)</div></div>)}
+    {state?.error && <p className="text-sm text-slate-300">{state.error}</p>}
   </section>);
 }

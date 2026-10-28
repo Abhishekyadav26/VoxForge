@@ -245,12 +245,12 @@ function Mark({ size = 18 }: { size?: number }) {
 
 /* drawn portraits — greyscale, so they sit in the palette */
 const PORTRAITS = [
-  { hair: "short", beard: true, glasses: false, skin: "#b9b4ae", hairC: "#2b2a29", shirt: "#3a3a3a", bg: "#d9d6d2" },
-  { hair: "long", beard: false, glasses: false, skin: "#d6d0c9", hairC: "#8d7f6c", shirt: "#7b7b7b", bg: "#e6e3df" },
-  { hair: "buzz", beard: false, glasses: true, skin: "#a7a19a", hairC: "#3d3c3a", shirt: "#1f1f1f", bg: "#cfcfcf" },
-  { hair: "bun", beard: false, glasses: true, skin: "#9a8f84", hairC: "#1e1d1c", shirt: "#5a5a5a", bg: "#dedbd6" },
-  { hair: "curly", beard: false, glasses: false, skin: "#7f746a", hairC: "#1a1918", shirt: "#8a8a8a", bg: "#d3d0cb" },
-  { hair: "side", beard: true, glasses: true, skin: "#c7c0b8", hairC: "#5b5650", shirt: "#2c2c2c", bg: "#e1ded9" },
+  { hair: "short", beard: true, glasses: false, skin: "#b5b5b5", hairC: "#2b2b2b", shirt: "#3a3a3a", bg: "#d8d8d8" },
+  { hair: "long", beard: false, glasses: false, skin: "#d0d0d0", hairC: "#8a8a8a", shirt: "#7b7b7b", bg: "#e4e4e4" },
+  { hair: "buzz", beard: false, glasses: true, skin: "#a5a5a5", hairC: "#3d3d3d", shirt: "#1f1f1f", bg: "#cfcfcf" },
+  { hair: "bun", beard: false, glasses: true, skin: "#989898", hairC: "#1e1e1e", shirt: "#5a5a5a", bg: "#dcdcdc" },
+  { hair: "curly", beard: false, glasses: false, skin: "#808080", hairC: "#1a1a1a", shirt: "#8a8a8a", bg: "#d2d2d2" },
+  { hair: "side", beard: true, glasses: true, skin: "#c2c2c2", hairC: "#5a5a5a", shirt: "#2c2c2c", bg: "#e0e0e0" },
 ]
 
 function Portrait({ index, size = 38, uid }: { index: number; size?: number; uid: string }) {
@@ -261,7 +261,7 @@ function Portrait({ index, size = 38, uid }: { index: number; size?: number; uid
       <defs>
         <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor={p.bg} />
-          <stop offset="1" stopColor="#9d9a96" />
+          <stop offset="1" stopColor="#9d9d9d" />
         </linearGradient>
       </defs>
       <rect width="64" height="64" fill={"url(#" + id + ")"} />
@@ -390,7 +390,7 @@ function FlowCard({ brand, features, uid, reduced, inView }: { brand: string; fe
                   </g>
                   <circle cx="11" cy="11" r="10.5" fill="none" stroke="var(--ib-paper)" strokeWidth="1.5" />
                 </svg>
-                <circle cx={m.x + 8} cy={m.y + 8} r="2.6" fill={i === 4 ? "var(--ib-faint)" : "#22c55e"} stroke="var(--ib-paper)" className={i === 4 ? undefined : "ib-presence"} />
+                <circle cx={m.x + 8} cy={m.y + 8} r="2.6" fill={i === 4 ? "var(--ib-faint)" : "#eeeeee"} stroke="var(--ib-paper)" className={i === 4 ? undefined : "ib-presence"} />
                 <g className="ib-av-tip" transform={"translate(" + m.x + "," + (m.y - 18) + ")"}>
                   <rect x={-m.name.length * 2.45 - 6} y="-9" width={m.name.length * 4.9 + 12} height="14" rx="2" fill="var(--ib-inv)" />
                   <text x="0" y="1" textAnchor="middle" fontSize="7.5" fill="var(--ib-inv-ink)" fontFamily="var(--ib-sans)">
