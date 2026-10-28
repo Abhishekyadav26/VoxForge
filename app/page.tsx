@@ -4,6 +4,7 @@ import { Link } from "next-view-transitions";
 import { NumberTicker } from "@/components/ui/number-ticker";
 import { TokenStatCard } from "@/components/TokenStatCard";
 import HomeHero from "@/components/HomeHero";
+import HomeFeatures from "@/components/HomeFeatures";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,9 @@ export default async function Home() {
     <>
       {/* Full-screen hero (floating nav overlays it) */}
       <HomeHero />
+
+      {/* Features bento, same hatched full-bleed language as the hero */}
+      <HomeFeatures />
 
       <main className="mx-auto max-w-5xl px-4 pb-16">
         {/* ------------ LIVE STRIP ------------ */}
