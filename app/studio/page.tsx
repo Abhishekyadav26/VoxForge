@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import VoiceRecorder, { COMMAND_HINTS, type VoiceCommand } from "@/components/VoiceRecorder";
+import VoiceRecorder, { COMMAND_HINTS, detectCommandFromText, type VoiceCommand } from "@/components/VoiceRecorder";
 import ChatThread, { type ThreadItem, type TraceLine } from "@/components/ChatThread";
 import toast from "react-hot-toast";
 import type { AgentSpec } from "@/lib/spec-schema";
@@ -151,6 +151,49 @@ export default function StudioPage() {
     }
   }, [transcript, spec, busyRef, commitUserMessage]);
 
+  /** Composer Send: post the bubble AND drive the agent — a typed line that
+   *  matches a command runs that command; anything else is a prompt to plan.
+   *  Strips the command words ("generate plan") so the alert text itself is
+   *  used as the prompt, falling back to the last heard transcript. */
+  const handleSend = useCallback((raw: string) => {
+    const text = raw.trim();
+    if (!text) { toast("Speak or type your alert first"); return; }
+    const cmd = detectCommandFromText(text);
+    if (cmd === "clear") {
+      setItems([]); setSpec(null); setSelectedStep(null); setTranscript("");
+      toast("Cleared — fresh thread");
+      return;
+    }
+    if (cmd === "test") {
+      commitUserMessage(text); setTranscript("");
+      void runTrace();
+      return;
+    }
+    if (cmd === "deploy") {
+      commitUserMessage(text); setTranscript("");
+      void deploy();
+      return;
+    }
+    if (cmd === "generate") {
+      const strip = (s: string) =>
+        s
+          .replace(/\b(?:please\s+|can you\s+)?(?:generate|make|build|create)\s+(?:a\s+|an\s+|the\s+)?(?:plan|spec)\b/gi, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+      const base = strip(text);
+      // Fallback: the just-heard alert still sitting in the composer,
+      // with any command words removed (never feed bare "generate plan").
+      const prompt = base || strip(transcript);
+      if (!prompt) { toast("Nothing to plan yet — tell me what to monitor first"); return; }
+      commitUserMessage(text); setTranscript("");
+      void extract(prompt);
+      return;
+    }
+    // Plain prompt → generate the plan directly.
+    commitUserMessage(text); setTranscript("");
+    void extract(text);
+  }, [transcript, busyRef, commitUserMessage, extract, runTrace, deploy]);
+
   /* Dev-start: seed a welcome prompt so the composer is never empty in demo. */
   const started = useRef(false);
   useEffect(() => {
@@ -195,8 +238,9 @@ export default function StudioPage() {
               </button>
             ))}
             <button
-              onClick={() => { if (!transcript.trim()) { toast("Speak or type your alert first"); return; } commitUserMessage(transcript); setTranscript(""); }}
-              className="ml-auto rounded-lg bg-white px-3 py-1 text-xs font-semibold text-black transition-transform hover:bg-slate-200 active:scale-[0.96]"
+              onClick={() => handleSend(transcript)}
+              disabled={busy}
+              className="ml-auto rounded-lg bg-white px-3 py-1 text-xs font-semibold text-black transition-transform hover:bg-slate-200 active:scale-[0.96] disabled:opacity-40"
             >
               Send
             </button>

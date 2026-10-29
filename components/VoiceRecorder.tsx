@@ -52,6 +52,10 @@ function detectCommand(text: string): VoiceCommand | null {
   return null;
 }
 
+export function detectCommandFromText(text: string): VoiceCommand | null {
+  return detectCommand(text);
+}
+
 /** Wrap the Web Speech API. Falls back to text input if unsupported. */
 export default function VoiceRecorder({ onTranscript, onPartial, onError, onCommand }: Props) {
   // Three-state: null = unknown (pre-hydration), false = unsupported,
