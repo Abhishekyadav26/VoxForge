@@ -55,16 +55,13 @@ export default function PlanGraph({ spec, onSelectStep }: Props) {
     return { nodes: ns, edges: es };
   }, [spec]);
 
-  return (<div className="relative overflow-hidden rounded border border-slate-700 p-2">
-    <BorderBeam size={220} duration={10} colorFrom="#8d8d8d" colorTo="#3a3a3a" />
-    <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} fitView onNodeClick={(_, n) => onSelectStep(n.id === "action" ? null : n.id)}>
-      <Background gap={16} />
-      <Controls />
-    </ReactFlow>
-    <div className="mt-1 flex gap-4 px-2 py-1 text-xs text-slate-400">
-      <span><span className="mr-1 inline-block h-3 w-3 rounded" style={{ background: "#8d8d8d" }} />step</span>
-      <span><span className="mr-1 inline-block h-3 w-3 rounded" style={{ background: "#c9c9c9" }} />condition</span>
-      <span><span className="mr-1 inline-block h-3 w-3 rounded" style={{ background: "#c9c9c9" }} />action</span>
+  return (
+    <div className="relative overflow-hidden rounded-xl border border-slate-700/70 bg-slate-900/60 shadow-sm">
+      <BorderBeam size={220} duration={10} colorFrom="#8d8d8d" colorTo="#3a3a3a" />
+      <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} fitView onNodeClick={(_, n) => onSelectStep(n.id === "action" ? null : n.id)}>
+        <Background gap={16} />
+        <Controls />
+      </ReactFlow>
     </div>
-  </div>);
+  );
 }
