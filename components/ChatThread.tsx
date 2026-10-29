@@ -159,12 +159,14 @@ function PlanBubble({
 
   return (
     <AgentCard>
-      <AgentWorkflow
-        phases={phases}
-        tools={VF_TOOLS}
-        workingLabel="Building your plan…"
-        onComplete={() => setRevealed(true)}
-      />
+      {!revealed && (
+        <AgentWorkflow
+          phases={phases}
+          tools={VF_TOOLS}
+          workingLabel="Building your plan…"
+          onComplete={() => setRevealed(true)}
+        />
+      )}
       {item.error && <p className="mt-1 text-[12.5px] text-rose-300">Error: {item.error}</p>}
       {revealed && (
         <div className="mt-2 space-y-2">
