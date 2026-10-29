@@ -4,10 +4,14 @@ import toast from "react-hot-toast";
 import { Mic } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 
+export type VoiceCommand = "generate" | "test" | "deploy" | "clear";
+
 interface Props {
   onTranscript: (text: string) => void; // final text (appended on stop)
   onPartial?: (text: string) => void;    // live interim text
   onError?: (err: string) => void;
+  /** Fired when a standalone voice command is recognised (kept out of transcript). */
+  onCommand?: (cmd: VoiceCommand) => void;
 }
 
 type SR = {
@@ -18,8 +22,36 @@ type SR = {
   onend: (() => void) | null;
 };
 
+export const COMMAND_HINTS: { cmd: VoiceCommand; hint: string }[] = [
+  { cmd: "generate", hint: "generate plan" },
+  { cmd: "test", hint: "run the trace" },
+  { cmd: "deploy", hint: "deploy" },
+  { cmd: "clear", hint: "clear" },
+];
+
+/**
+ * Map a short spoken phrase to a studio command. Commands are standalone
+ * utterances (short), so a long prompt like "deploy a monitor when SOL drops"
+ * stays transcript; a short "deploy" fires the command.
+ */
+const COMMANDS: { cmd: VoiceCommand; re: RegExp }[] = [
+  { cmd: "generate", re: /\b(generate|make|build|create)\s+(a\s+|an\s+|the\s+)?(plan|spec)\b/i },
+  { cmd: "test", re: /\b(run|test)\s+(the\s+)?(trace|test|run|dry run|it)\b/i },
+  { cmd: "deploy", re: /\b(deploy|launch|publish|go live|make it live|save the agent)\b/i },
+  { cmd: "clear", re: /\b(clear|reset|start over|undo|wipe)\b/i },
+];
+
+function detectCommand(text: string): VoiceCommand | null {
+  const t = text.trim();
+  if (!t || t.length > 40) return null; // only standalone command utterances
+  for (const c of COMMANDS) {
+    if (c.re.test(t)) return c.cmd;
+  }
+  return null;
+}
+
 /** Wrap the Web Speech API. Falls back to text input if unsupported. */
-export default function VoiceRecorder({ onTranscript, onPartial, onError }: Props) {
+export default function VoiceRecorder({ onTranscript, onPartial, onError, onCommand }: Props) {
   // Three-state: null = unknown (pre-hydration), false = unsupported,
   // true = supported. Computing this from `window` during render would make
   // server HTML (no window) differ from client HTML (window) and break
@@ -47,8 +79,18 @@ export default function VoiceRecorder({ onTranscript, onPartial, onError }: Prop
       let interim = "";
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const r = e.results[i];
-        if (r.isFinal) finalRef.current += r[0].transcript + " ";
-        else interim += r[0].transcript;
+        if (r.isFinal) {
+          const transcript = r[0].transcript;
+          const cmd = detectCommand(transcript);
+          if (cmd) {
+            // Command: fire it, do not pollute the agent transcript.
+            onCommand?.(cmd);
+          } else {
+            finalRef.current += transcript + " ";
+          }
+        } else {
+          interim += r[0].transcript;
+        }
       }
       setLiveText(interim);
       onPartial?.(finalRef.current + interim);
@@ -56,7 +98,7 @@ export default function VoiceRecorder({ onTranscript, onPartial, onError }: Prop
     rec.onerror = (e: any) => { const msg = e?.error ?? "Speech recognition error"; onError?.(msg); toast.error(msg); };
     rec.onend = () => setListening(false);
     recRef.current = rec;
-  }, [supported, onPartial, onError]);
+  }, [supported, onPartial, onError, onCommand]);
 
   const toggle = useCallback(() => {
     const rec = recRef.current;
@@ -86,6 +128,10 @@ export default function VoiceRecorder({ onTranscript, onPartial, onError }: Prop
     >
       {listening ? "■ Stop" : (<span className="inline-flex items-center gap-1.5"><Mic /> Speak</span>)}
     </Button>
+    {listening && <span className="inline-flex items-center gap-1.5 text-xs text-slate-400">
+      <span className="h-2 w-2 animate-pulse rounded-full bg-red-400" />
+      Listening — say “generate plan”, “run the trace”, “deploy”, “clear”
+    </span>}
     {liveText && <p className="text-sm italic text-slate-400">{liveText}</p>}
   </div>);
 }

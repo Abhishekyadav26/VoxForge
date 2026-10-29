@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { forwardRef, useImperativeHandle, useState } from "react";
 import { NumberTicker } from "@/components/ui/number-ticker";
 import { TokenStatCard } from "@/components/TokenStatCard";
 import { Play } from "@/components/icons";
@@ -16,21 +16,27 @@ function formatMarket(n: number): string {
 
 interface TraceLine { stepId: string; block: string; detail: string; output: Record<string, unknown>; }
 
+export interface TestResultsHandle {
+  run: () => void;
+}
+
 /** Dry-run the spec server-side; shows a step-by-step trace. */
-export default function TestResults({ spec }: { spec: AgentSpec }) {
-  const [state, setState] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  async function dryRun() {
-    setLoading(true); setError(null); setState(null);
-    try {
-      const res = await fetch("/api/test-spec", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ spec }) });
-      const json = await res.json();
-      if (!json.success) throw new Error(json.error);
-      setState(json.data);
-      toast.success(json.data.triggered ? "Conditions met — alert would fire" : "No trigger — conditions not met");
-    } catch (e: any) { setError(e.message); toast.error(e.message); } finally { setLoading(false); }
-  }
+const TestResults = forwardRef<TestResultsHandle, { spec: AgentSpec }>(
+  function TestResults({ spec }, ref) {
+    const [state, setState] = useState<any>(null);
+    const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
+    async function dryRun() {
+      setLoading(true); setError(null); setState(null);
+      try {
+        const res = await fetch("/api/test-spec", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ spec }) });
+        const json = await res.json();
+        if (!json.success) throw new Error(json.error);
+        setState(json.data);
+        toast.success(json.data.triggered ? "Conditions met — alert would fire" : "No trigger — conditions not met");
+      } catch (e: any) { setError(e.message); toast.error(e.message); } finally { setLoading(false); }
+    }
+    useImperativeHandle(ref, () => ({ run: () => void dryRun() }));
   return (<section className="space-y-2">
     <h2 className="text-lg font-semibold">Dry Run</h2>
     <Button size="sm" variant="secondary" onClick={dryRun} disabled={loading}><Play />{loading ? "Running…" : "Run trace"}</Button>
@@ -111,4 +117,7 @@ export default function TestResults({ spec }: { spec: AgentSpec }) {
     {state?.messages?.length > 0 && state.messages.map((m: string, i: number) => <div key={i} className="rounded border border-slate-600 bg-slate-900/60 p-2 text-sm">{m}<div className="mt-1 text-xs text-slate-400">(dry-run — not sent)</div></div>)}
     {state?.error && <p className="text-sm text-slate-300">{state.error}</p>}
   </section>);
-}
+  }
+);
+
+export default TestResults;

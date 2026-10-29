@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { forwardRef, useImperativeHandle, useState } from "react";
 import { Link } from "next-view-transitions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,11 +10,16 @@ import type { AgentSpec } from "@/lib/spec-schema";
 
 interface Props { spec: AgentSpec; onSpecChange: (s: AgentSpec) => void; }
 
+export interface AgentDeployHandle {
+  deploy: () => void;
+}
+
 /** Fill missing fields, then save the agent. */
-export default function AgentDeployPanel({ spec, onSpecChange }: Props) {
-  const [result, setResult] = useState<{ id: string } | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+const AgentDeployPanel = forwardRef<AgentDeployHandle, Props>(
+  function AgentDeployPanel({ spec, onSpecChange }, ref) {
+    const [result, setResult] = useState<{ id: string } | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
 
   const missing = spec.missingFields ?? [];
   const needsAddress = missing.includes("wallet_address");
@@ -34,6 +39,7 @@ export default function AgentDeployPanel({ spec, onSpecChange }: Props) {
       toast.success("Agent deployed");
     } catch (e: any) { setError(e.message); toast.error(e.message); } finally { setLoading(false); }
   }
+  useImperativeHandle(ref, () => ({ deploy: () => void deploy() }));
   function setAddress(v: string) {
     if (!addrStep) return;
     onSpecChange({ ...spec, steps: spec.steps.map((s) => s.id === addrStep.id ? { ...s, params: { ...(s.params as any), address: v } } : s), missingFields: missing.filter((f) => f !== "wallet_address") });
@@ -46,4 +52,7 @@ export default function AgentDeployPanel({ spec, onSpecChange }: Props) {
     {error && <p className="text-sm text-slate-300">{error}</p>}
     {result && (<p className="text-sm text-slate-200">Deployed! <Link href={"/agents/" + result.id} className="underline">View agent →</Link></p>)}
   </section>);
-}
+  }
+);
+
+export default AgentDeployPanel;
