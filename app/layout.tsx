@@ -3,7 +3,7 @@ import { ViewTransitions } from "next-view-transitions";
 import { Link } from "next-view-transitions";
 import { Mic } from "@/components/icons";
 import Toaster from "@/components/ui/toaster";
-import SessionProvider from "@/components/SessionProvider";
+import AppProviders from "@/components/AppProviders";
 import AuthButton from "@/components/AuthButton";
 
 export const metadata = {
@@ -16,7 +16,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <ViewTransitions>
       <html lang="en">
         <body className="min-h-screen bg-slate-950 text-slate-100">
-          <SessionProvider>
+          <AppProviders>
           {/* Floating nav: overlays the full-screen hero on the home page,
               and stays pinned while scrolling content pages. Each page owns
               its own width container; pages that start under the header use
@@ -43,7 +43,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </header>
           {children}
           <Toaster />
-          </SessionProvider>
+          </AppProviders>
         </body>
       </html>
     </ViewTransitions>

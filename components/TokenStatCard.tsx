@@ -59,9 +59,8 @@ export function TokenStatCard({
 
   return (
     <motion.div
-      whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
       className={cn(
-        "flex w-full max-w-xl overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 shadow-lg",
+        "hover-lift flex w-full max-w-xl overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 shadow-lg",
         className
       )}
     >

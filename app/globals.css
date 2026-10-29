@@ -122,6 +122,17 @@ body {
   }
 }
 
+/* Hover lift: only on pointers that can hover (better-ui: hover effects
+   only on hover-capable pointers — touch shouldn't latch a stuck state). */
+@media (hover: hover) {
+  .hover-lift {
+    transition: transform 150ms ease-out;
+  }
+  .hover-lift:hover {
+    transform: translateY(-2px) scale(1.02);
+  }
+}
+
 @layer utilities {
   /* Magic UI PulsatingButton ripple (Tailwind v3 compatible) */
   .animate-pulse-ripple {
