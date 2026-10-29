@@ -25,13 +25,15 @@ create table if not exists public.runs (
 create index if not exists runs_agent_id_idx on public.runs (agent_id);
 create index if not exists runs_executed_at_idx on public.runs (executed_at desc);
 
--- Row-level security: the app uses the service_role key server-side, which
--- bypasses RLS, so these policies keep tables locked down for anon/authenticated.
+-- Row-level security: this app runs server-side. With a **secret** key
+-- (sb_secret_..., legacy service_role) RLS is bypassed entirely. With a
+-- **publishable** key (sb_publishable_..., legacy anon) these policies grant
+-- full access to the anon role — fine for a single-user app, not for
+-- multi-user (add real auth policies then).
 alter table public.agents enable row level security;
 alter table public.runs enable row level security;
 
--- Optional: allow only authenticated users (add your own policies for multi-user).
--- create policy "agents_all_authenticated" on public.agents
---   for all to authenticated using (true) with check (true);
--- create policy "runs_all_authenticated" on public.runs
---   for all to authenticated using (true) with check (true);
+create policy "agents_all_anon" on public.agents
+  for all to anon using (true) with check (true);
+create policy "runs_all_anon" on public.runs
+  for all to anon using (true) with check (true);
