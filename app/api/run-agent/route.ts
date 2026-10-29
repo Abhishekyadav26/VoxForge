@@ -13,7 +13,9 @@ export async function POST(req: Request) {
     const { agentId, dryRun } = Body.parse(await req.json());
     const agent = await getAgent(agentId, session.user.id);
     if (!agent) return NextResponse.json({ success: false, error: "Agent not found" }, { status: 404 });
-    const result = await runSpec(agent.spec, { dryRun: dryRun ?? true });
+    // Real run by default: actually sends the Telegram alert. The Studio's
+    // dry-run trace goes through /api/test-spec instead (always dryRun: true).
+    const result = await runSpec(agent.spec, { dryRun: dryRun ?? false });
     await markAgentRun(agentId, result.triggered, session.user.id);
     const run = await saveRun({ agentId, triggered: result.triggered, trace: result.trace, messages: result.messages }, session.user.id);
     return NextResponse.json({ success: true, data: { ...result, runId: run.id } });
