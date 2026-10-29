@@ -151,7 +151,6 @@ function PlanBubble({
     return [
       {
         trace: nodes,
-        message: "Plan generated — review the monitor, tweak a step, then say “run the trace” or “deploy”.",
       },
     ];
   }, [item.spec, item.transcript]);
