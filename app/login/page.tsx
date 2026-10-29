@@ -3,7 +3,7 @@
 import { signIn, useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Mic } from "@/components/icons";
+import { Mic, GoogleIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import toast from "react-hot-toast";
 
@@ -98,6 +98,24 @@ export default function LoginPage() {
               : "Create account"}
         </Button>
       </form>
+
+      <div className="flex items-center gap-3 text-xs text-slate-500">
+        <span className="h-px flex-1 bg-slate-700" />
+        or
+        <span className="h-px flex-1 bg-slate-700" />
+      </div>
+
+      <Button
+        type="button"
+        size="lg"
+        variant="outline"
+        className="w-full"
+        onClick={() => signIn("google", { callbackUrl: "/studio" })}
+        disabled={busy}
+      >
+        <GoogleIcon />
+        Continue with Google
+      </Button>
 
       <button
         type="button"

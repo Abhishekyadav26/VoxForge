@@ -29,7 +29,8 @@ export interface UserRecord {
   id: string;
   email: string;
   name?: string;
-  passwordHash: string;
+  /** bcrypt hash; undefined for OAuth-only accounts (e.g. Google sign-in). */
+  passwordHash?: string;
   createdAt: string;
 }
 
@@ -48,7 +49,9 @@ interface Storage {
   listRuns(agentId?: string, userId?: string): Promise<RunRecord[]>;
   saveRun(run: Omit<RunRecord, "id" | "executedAt">, userId?: string): Promise<RunRecord>;
   findByEmail(email: string): Promise<UserRecord | undefined>;
-  createUser(user: { email: string; name?: string; passwordHash: string }): Promise<UserRecord>;
+  createUser(user: { email: string; name?: string; passwordHash?: string }): Promise<UserRecord>;
+  /** Look up by email, or create a stub for an OAuth sign-in (no password). */
+  findOrCreateOAuthUser(user: { email: string; name?: string }): Promise<UserRecord>;
 }
 
 // ---------- Supabase backend ----------
@@ -199,7 +202,7 @@ const supabaseStorage: Storage = {
       id: data.id,
       email: data.email,
       name: data.name ?? undefined,
-      passwordHash: data.password_hash,
+      passwordHash: data.password_hash ?? undefined,
       createdAt: data.created_at ?? new Date().toISOString(),
     };
   },
@@ -216,11 +219,16 @@ const supabaseStorage: Storage = {
       id: rec.id,
       email: rec.email,
       name: rec.name ?? null,
-      password_hash: rec.passwordHash,
+      password_hash: rec.passwordHash ?? null,
       created_at: rec.createdAt,
     });
     if (error) throw new Error(`Supabase createUser failed: ${error.message}`);
     return rec;
+  },
+  async findOrCreateOAuthUser(user) {
+    const existing = await this.findByEmail(user.email);
+    if (existing) return existing;
+    return this.createUser({ email: user.email, name: user.name });
   },
 };
 
@@ -337,6 +345,11 @@ const fileStorage: Storage = {
     await writeJson(await usersFile(), users);
     return rec;
   },
+  async findOrCreateOAuthUser(user) {
+    const existing = await this.findByEmail(user.email);
+    if (existing) return existing;
+    return this.createUser({ email: user.email, name: user.name });
+  },
 };
 
 // ---------- Dispatch ----------
@@ -404,7 +417,13 @@ export async function findByEmail(email: string): Promise<UserRecord | undefined
 export async function createUser(user: {
   email: string;
   name?: string;
-  passwordHash: string;
+  passwordHash?: string;
 }): Promise<UserRecord> {
   return getStorage().createUser(user);
+}
+export async function findOrCreateOAuthUser(user: {
+  email: string;
+  name?: string;
+}): Promise<UserRecord> {
+  return getStorage().findOrCreateOAuthUser(user);
 }
