@@ -25,6 +25,14 @@ export interface RunRecord {
   userId?: string;
 }
 
+export interface UserRecord {
+  id: string;
+  email: string;
+  name?: string;
+  passwordHash: string;
+  createdAt: string;
+}
+
 // ---------------------------------------------------------------------------
 // Storage backends: Supabase (cloud, durable) when configured, otherwise local
 // JSON files with a writable-dir fallback (./data, else os.tmpdir()).
@@ -39,6 +47,8 @@ interface Storage {
   markAgentRun(id: string, triggered: boolean, userId?: string): Promise<void>;
   listRuns(agentId?: string, userId?: string): Promise<RunRecord[]>;
   saveRun(run: Omit<RunRecord, "id" | "executedAt">, userId?: string): Promise<RunRecord>;
+  findByEmail(email: string): Promise<UserRecord | undefined>;
+  createUser(user: { email: string; name?: string; passwordHash: string }): Promise<UserRecord>;
 }
 
 // ---------- Supabase backend ----------
@@ -175,6 +185,43 @@ const supabaseStorage: Storage = {
     }
     return rec;
   },
+  async findByEmail(email) {
+    const sb = getSupabase();
+    if (!sb) throw new Error("Supabase not configured");
+    const { data, error } = await sb
+      .from("users")
+      .select("*")
+      .eq("email", email.toLowerCase())
+      .maybeSingle();
+    if (error) throw new Error(`Supabase findByEmail failed: ${error.message}`);
+    if (!data) return undefined;
+    return {
+      id: data.id,
+      email: data.email,
+      name: data.name ?? undefined,
+      passwordHash: data.password_hash,
+      createdAt: data.created_at ?? new Date().toISOString(),
+    };
+  },
+  async createUser(user) {
+    const sb = getSupabase();
+    if (!sb) throw new Error("Supabase not configured");
+    const rec: UserRecord = {
+      ...user,
+      email: user.email.toLowerCase(),
+      id: `user_${Date.now().toString(36)}`,
+      createdAt: new Date().toISOString(),
+    };
+    const { error } = await sb.from("users").insert({
+      id: rec.id,
+      email: rec.email,
+      name: rec.name ?? null,
+      password_hash: rec.passwordHash,
+      created_at: rec.createdAt,
+    });
+    if (error) throw new Error(`Supabase createUser failed: ${error.message}`);
+    return rec;
+  },
 };
 
 // ---------- Local JSON-file backend (fallback) ----------
@@ -203,6 +250,7 @@ async function getDataDir(): Promise<string> {
 
 const agentsFile = async () => path.join(await getDataDir(), "agents.json");
 const runsFile = async () => path.join(await getDataDir(), "runs.json");
+const usersFile = async () => path.join(await getDataDir(), "users.json");
 
 async function readJson<T>(file: string, fallback: T): Promise<T> {
   try {
@@ -273,6 +321,22 @@ const fileStorage: Storage = {
     await writeJson(await runsFile(), runs.slice(0, 200));
     return rec;
   },
+  async findByEmail(email) {
+    const users = await readJson<UserRecord[]>(await usersFile(), []);
+    return users.find((u) => u.email === email.toLowerCase());
+  },
+  async createUser(user) {
+    const users = await readJson<UserRecord[]>(await usersFile(), []);
+    const rec: UserRecord = {
+      ...user,
+      email: user.email.toLowerCase(),
+      id: `user_${Date.now().toString(36)}`,
+      createdAt: new Date().toISOString(),
+    };
+    users.unshift(rec);
+    await writeJson(await usersFile(), users);
+    return rec;
+  },
 };
 
 // ---------- Dispatch ----------
@@ -332,4 +396,15 @@ export async function saveRun(
   userId?: string
 ): Promise<RunRecord> {
   return getStorage().saveRun(run, userId);
+}
+
+export async function findByEmail(email: string): Promise<UserRecord | undefined> {
+  return getStorage().findByEmail(email);
+}
+export async function createUser(user: {
+  email: string;
+  name?: string;
+  passwordHash: string;
+}): Promise<UserRecord> {
+  return getStorage().createUser(user);
 }

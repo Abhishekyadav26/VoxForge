@@ -1,11 +1,13 @@
 "use client";
 
 import { signIn, signOut, useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
 /** Compact sign-in / user chip for the floating nav. */
 export default function AuthButton() {
   const { data: session, status } = useSession();
+  const router = useRouter();
 
   if (status === "loading") return <span className="text-xs text-slate-500">…</span>;
 
@@ -15,7 +17,7 @@ export default function AuthButton() {
         size="sm"
         variant="outline"
         className="h-7 px-3 text-xs"
-        onClick={() => signIn("github", { callbackUrl: "/studio" })}
+        onClick={() => router.push("/login")}
       >
         Sign in
       </Button>

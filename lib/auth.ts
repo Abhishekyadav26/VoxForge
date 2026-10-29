@@ -1,24 +1,47 @@
 import { NextAuthOptions } from "next-auth";
-import GitHubProvider from "next-auth/providers/github";
+import CredentialsProvider from "next-auth/providers/credentials";
+import bcrypt from "bcryptjs";
+import { findByEmail } from "@/lib/db";
 
 /**
- * NextAuth configuration.
+ * NextAuth configuration with email/password (Credentials) provider.
  *
- * Uses JWT sessions (no database adapter): the GitHub user id is stored in
- * the token and used to scope agents/runs per user in the app's own store
- * (Supabase or local files — see lib/db.ts).
+ * Secrets are verified against the app's own user store (lib/db.ts →
+ * Supabase users table, or local JSON files). The user id from the store
+ * is carried in the JWT and used to scope agents/runs per user.
  *
  * Env vars (see .env.example):
  *   NEXTAUTH_URL     — base URL of the app (http://localhost:3000 in dev)
  *   NEXTAUTH_SECRET  — openssl rand -base64 32
- *   GITHUB_ID        — GitHub OAuth App client id
- *   GITHUB_SECRET    — GitHub OAuth App client secret
  */
 export const authOptions: NextAuthOptions = {
   providers: [
-    GitHubProvider({
-      clientId: process.env.GITHUB_ID ?? "",
-      clientSecret: process.env.GITHUB_SECRET ?? "",
+    CredentialsProvider({
+      name: "Email",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) return null;
+        const email = credentials.email.toLowerCase();
+        // Basic shape check before hitting storage.
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return null;
+        try {
+          const user = await findByEmail(email);
+          if (!user) return null;
+          const valid = await bcrypt.compare(credentials.password, user.passwordHash);
+          if (!valid) return null;
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name ?? user.email.split("@")[0],
+          };
+        } catch (e) {
+          console.error("[auth] authorize error:", e);
+          return null;
+        }
+      },
     }),
   ],
   session: { strategy: "jwt" },
@@ -26,12 +49,12 @@ export const authOptions: NextAuthOptions = {
   pages: { signIn: "/login" },
   callbacks: {
     async jwt({ token, user }) {
-      // First sign-in: carry the provider user id into the token.
+      // First sign-in: carry the store user id into the token.
       if (user) token.uid = user.id;
       return token;
     },
     async session({ session, token }) {
-      // Expose the stable user id (from GitHub) on the session.
+      // Expose the stable user id on the session.
       if (token.uid) session.user.id = token.uid as string;
       return session;
     },
