@@ -80,6 +80,7 @@ export async function getPrice(
             quote?: Array<{
               symbol?: string;
               price?: number;
+              market_cap?: number;
               percent_change_1h?: number;
               percent_change_24h?: number;
               percent_change_7d?: number;
@@ -98,14 +99,22 @@ export async function getPrice(
         );
       }
       // The SDK returns the full response body: { data: CryptoQuoteV3Dto[], status }.
-      // A symbol like SOL matches many dead projects (Solcoin 2014, Sola Token,
-      // …) — prefer the entry that actually carries a real numeric quote.
+      // A symbol like SOL or JUP matches many dead projects (Solcoin 2014,
+      // old Jupiter tokens, …) — among the matches that carry a real numeric
+      // quote, pick the one with the highest market cap. That is the live
+      // token (the real Jupiter has a $1B+ mcap; dead forks sit at pennies).
       const entries = data?.data ?? [];
       const matches = entries.filter((d) => d.symbol?.toUpperCase() === sym);
-      const entry =
-        matches.find((d) =>
-          d.quote?.some((q) => typeof q.price === "number" && q.price !== null)
-        ) ?? matches[0] ?? undefined;
+      const quoted = matches.filter((d) =>
+        d.quote?.some((q) => typeof q.price === "number" && q.price !== null)
+      );
+      const entry = (quoted.length ? quoted : matches).sort((a, b) => {
+        const mcapA =
+          a.quote?.find((q) => q.symbol?.toUpperCase() === conv)?.market_cap ?? 0;
+        const mcapB =
+          b.quote?.find((q) => q.symbol?.toUpperCase() === conv)?.market_cap ?? 0;
+        return mcapB - mcapA;
+      })[0];
       const quote = entry?.quote?.find((q) => q.symbol?.toUpperCase() === conv);
       const price = quote?.price;
       if (typeof price !== "number") {
