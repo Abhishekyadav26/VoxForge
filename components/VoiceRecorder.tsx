@@ -20,11 +20,21 @@ type SR = {
 
 /** Wrap the Web Speech API. Falls back to text input if unsupported. */
 export default function VoiceRecorder({ onTranscript, onPartial, onError }: Props) {
-  const supported = typeof window !== "undefined" && (!!(window as any).SpeechRecognition || !!(window as any).webkitSpeechRecognition);
+  // Three-state: null = unknown (pre-hydration), false = unsupported,
+  // true = supported. Computing this from `window` during render would make
+  // server HTML (no window) differ from client HTML (window) and break
+  // hydration, so we defer it to an effect.
+  const [supported, setSupported] = useState<boolean | null>(null);
   const [listening, setListening] = useState(false);
   const [liveText, setLiveText] = useState("");
   const recRef = useRef<SR | null>(null);
   const finalRef = useRef("");
+
+  useEffect(() => {
+    setSupported(
+      !!(window as any).SpeechRecognition || !!(window as any).webkitSpeechRecognition
+    );
+  }, []);
 
   useEffect(() => {
     if (!supported) return;
@@ -61,6 +71,10 @@ export default function VoiceRecorder({ onTranscript, onPartial, onError }: Prop
     }
   }, [listening, onTranscript]);
 
+  if (supported === null) {
+    // Initial render (server + first client pass) — must be identical on both.
+    return <div className="h-10" aria-hidden />;
+  }
   if (!supported) {
     return <p className="text-sm text-slate-400">Speech not supported in this browser — use the text box below instead.</p>;
   }
