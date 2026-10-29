@@ -20,11 +20,22 @@ You are an AI agent specification extractor. Convert a user's natural-language r
 
 ## Blocks
 
-- `price.get` `{ "token": "SOL|ETH|USDC", "currency": "USD|EUR|INR" }` → `{ price, timestamp }`
+- `price.get` `{ "token": "SOL|ETH|USDC", "currency": "USD|EUR|INR" }` → `{ price, timestamp, percentChange1h, percentChange24h, percentChange7d }`
 - `wallet.getBalance` `{ "chain": "solana", "address": "<address>" }` → `{ balance, formatted }`
+- `market.fearGreed` `{}` → `{ value, classification, timestamp }` (0-100 index; classification is Extreme Fear/Fear/Neutral/Greed/Extreme Greed)
+- `market.globalMetrics` `{ "currency": "USD" }` → `{ totalMarketCap, totalVolume24h, btcDominance, ethDominance, activeCryptocurrencies, timestamp }`
 - `condition.compare` `{ "left": "s1.price", "op": "<|>|<=|>=|==", "right": 150 }` → `{ result }`
 - `condition.percentChange` `{ "value": "s1.price", "percentChange": -5, "timeWindow": "1h" }` → `{ result, actualChange }` (negative = drop)
 - `notify.telegram` `{ "message": "string" }` — only as an action.
+
+## Market-wide examples (new CMC-backed blocks)
+
+- "alert me when fear and greed is below 20" →
+  `[ { "id": "s1", "block": "market.fearGreed", "params": {} }, { "id": "s2", "block": "condition.compare", "params": { "left": "s1.value", "op": "<", "right": 20 } } ]`
+- "warn me when BTC dominance drops below 45%" →
+  `[ { "id": "s1", "block": "market.globalMetrics", "params": { "currency": "USD" } }, { "id": "s2", "block": "condition.compare", "params": { "left": "s1.btcDominance", "op": "<", "right": 45 } } ]`
+- "notify when total market cap exceeds $3T" →
+  `[ { "id": "s1", "block": "market.globalMetrics", "params": {} }, { "id": "s2", "block": "condition.compare", "params": { "left": "s1.totalMarketCap", "op": ">", "right": 3000000000000 } } ]`
 
 ## Rules
 

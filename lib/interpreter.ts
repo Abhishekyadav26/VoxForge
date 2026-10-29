@@ -1,8 +1,28 @@
 import { AgentSpec } from "./spec-schema";
 import { getPrice } from "./blocks/price";
 import { getBalance } from "./blocks/wallet";
+import { getFearGreed, getGlobalMetrics, formatUsd } from "./blocks/market";
 import { compare, percentChangeCheck, CompareOp } from "./blocks/condition";
 import { renderMessage, sendTelegram } from "./blocks/notify";
+
+/**
+ * Pick the real percent change from a step output (price.get carries
+ * percentChange1h/24h/7d from CMC) that matches the requested time window.
+ * Returns undefined when the output has no real change data (e.g. balances).
+ */
+function realPercentChange(
+  ref: string,
+  outputs: Record<string, Record<string, unknown>>,
+  timeWindow: string
+): number | undefined {
+  const [sid] = ref.split(".");
+  const out = outputs[sid] ?? {};
+  const w = timeWindow.toLowerCase();
+  if (/^(5m|60s|1h)/.test(w)) return typeof out.percentChange1h === "number" ? (out.percentChange1h as number) : undefined;
+  if (/^24h/.test(w)) return typeof out.percentChange24h === "number" ? (out.percentChange24h as number) : undefined;
+  if (/^7d/.test(w)) return typeof out.percentChange7d === "number" ? (out.percentChange7d as number) : undefined;
+  return undefined;
+}
 
 export interface TraceLine {
   stepId: string;
@@ -46,7 +66,7 @@ export async function runSpec(
       switch (step.block) {
         case "price.get": {
           const r = await getPrice(String(p.token ?? "SOL"), String(p.currency ?? "USD"));
-          outputs[step.id] = r as Record<string, unknown>;
+          outputs[step.id] = r as unknown as Record<string, unknown>;
           trace.push({
             stepId: step.id, block: step.block,
             detail: `${p.token} price = $${r.price}`,
@@ -67,6 +87,26 @@ export async function runSpec(
           });
           break;
         }
+        case "market.fearGreed": {
+          const r = await getFearGreed();
+          outputs[step.id] = r as unknown as Record<string, unknown>;
+          trace.push({
+            stepId: step.id, block: step.block,
+            detail: `Fear & Greed = ${r.value} (${r.classification})`,
+            output: outputs[step.id],
+          });
+          break;
+        }
+        case "market.globalMetrics": {
+          const r = await getGlobalMetrics(String(p.currency ?? "USD"));
+          outputs[step.id] = r as unknown as Record<string, unknown>;
+          trace.push({
+            stepId: step.id, block: step.block,
+            detail: `Total market cap ${formatUsd(r.totalMarketCap)} · BTC dom ${r.btcDominance.toFixed(1)}% · ETH dom ${r.ethDominance.toFixed(1)}%`,
+            output: outputs[step.id],
+          });
+          break;
+        }
         case "condition.compare": {
           const left = getRef(String(p.left), outputs);
           const r = compare(left, p.op as CompareOp, Number(p.right));
@@ -80,11 +120,16 @@ export async function runSpec(
         }
         case "condition.percentChange": {
           const cur = getRef(String(p.value), outputs);
-          const r = percentChangeCheck(cur, Number(p.percentChange), String(p.timeWindow ?? "1h"), opts?.mockActualChange);
+          const window = String(p.timeWindow ?? "1h");
+          // Prefer the real change from CMC (live run); fall back to the
+          // provided mock so dry-runs without a key still behave deterministically.
+          const actual =
+            realPercentChange(String(p.value), outputs, window) ?? opts?.mockActualChange;
+          const r = percentChangeCheck(cur, Number(p.percentChange), window, actual);
           outputs[step.id] = r as Record<string, unknown>;
           trace.push({
             stepId: step.id, block: step.block,
-            detail: `${p.value} changed ${r.actualChange}% vs threshold ${p.percentChange}% (${p.timeWindow})? ${r.result ? "YES" : "NO"}`,
+            detail: `${p.value} changed ${r.actualChange}% vs threshold ${p.percentChange}% (${window})? ${r.result ? "YES" : "NO"}`,
             output: outputs[step.id],
           });
           break;

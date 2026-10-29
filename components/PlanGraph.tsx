@@ -22,6 +22,8 @@ function summarize(s: AgentSpec["steps"][number]): string {
   switch (s.block) {
     case "price.get": return `${s.id} · price.get · ${p.token} → ${p.currency}`;
     case "wallet.getBalance": return `${s.id} · wallet.getBalance · ${p.chain} · ${p.address}`;
+    case "market.fearGreed": return `${s.id} · market.fearGreed · CMC index`;
+    case "market.globalMetrics": return `${s.id} · market.globalMetrics · ${p.currency ?? "USD"}`;
     case "condition.compare": return `${s.id} · compare · ${p.left} ${p.op} ${p.right}`;
     case "condition.percentChange": return `${s.id} · %change · ${p.value} ${p.percentChange}% (${p.timeWindow})`;
     default: return s.id;

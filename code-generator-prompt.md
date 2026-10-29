@@ -9,6 +9,7 @@ You convert an AgentSpec JSON into a self-contained TypeScript module that execu
 - Import the fixed blocks from relative paths:
   - `import { getPrice } from "./blocks/price";`
   - `import { getBalance } from "./blocks/wallet";`
+  - `import { getFearGreed, getGlobalMetrics } from "./blocks/market";`
   - `import { compare, percentChangeCheck } from "./blocks/condition";`
   - `import { renderMessage, sendTelegram } from "./blocks/notify";`
 - Export an async `run()` function: execute each step in order, store outputs in `outputs[s.id]`, then trigger actions only when **all** condition steps returned `result: true` (AND logic).

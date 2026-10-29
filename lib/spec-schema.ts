@@ -5,6 +5,10 @@ export const PriceGetParams = z.object({
   token: z.string().min(1).transform((s) => s.toUpperCase()),
   currency: z.enum(["USD", "EUR", "INR"]).default("USD"),
 });
+export const FearGreedParams = z.object({}).default({});
+export const GlobalMetricsParams = z.object({
+  currency: z.enum(["USD", "EUR", "INR"]).default("USD"),
+});
 export const WalletBalanceParams = z.object({
   chain: z.string().default("solana"),
   address: z.string().min(1),
@@ -25,6 +29,8 @@ export const StepSchema = z.object({
   block: z.enum([
     "price.get",
     "wallet.getBalance",
+    "market.fearGreed",
+    "market.globalMetrics",
     "condition.compare",
     "condition.percentChange",
   ]),

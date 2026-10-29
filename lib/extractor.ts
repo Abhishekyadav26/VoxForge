@@ -27,6 +27,34 @@ function tokenFrom(text: string): string {
   return m ? m[1] : "SOL";
 }
 
+/**
+ * Market-wide intent detection: "fear and greed", "BTC dominance",
+ * "total market cap" — backed by the market.fearGreed / market.globalMetrics
+ * blocks. Returns the matched kind or null.
+ */
+type MarketIntent = "fearGreed" | "dominance" | "marketCap" | null;
+function marketIntent(text: string): MarketIntent {
+  const t = text.toLowerCase();
+  if (/fear\s*(&|and)?\s*greed|sentiment|greed/.test(t)) return "fearGreed";
+  if (/(btc|bitcoin)\s*dominance|dominance/.test(t)) return "dominance";
+  if (/total\s+market\s*cap|market\s*cap|global\s+metrics/.test(t)) return "marketCap";
+  return null;
+}
+
+/** Extract a numeric threshold like "below 20" / "above 50" / "< 30". */
+function thresholdOf(text: string): { dir: "<" | ">"; n: number } | null {
+  const t = text.toLowerCase();
+  const down =
+    t.match(/(?:below|under|less\s+than|drops?\s+below|<\s*)\s*(\d+(?:\.\d+)?)/) ??
+    t.match(/<(\d+(?:\.\d+)?)/);
+  if (down) return { dir: "<", n: parseFloat(down[1]) };
+  const up =
+    t.match(/(?:above|over|more\s+than|exceeds|rises?\s+above|>\s*)\s*(\d+(?:\.\d+)?)/) ??
+    t.match(/>\s*(\d+(?:\.\d+)?)/);
+  if (up) return { dir: ">", n: parseFloat(up[1]) };
+  return null;
+}
+
 // ---------- local rule-based extractor (no API key needed) ----------
 /**
  * Handles: "drops below $N" -> compare(<), "above $N" -> compare(>),
@@ -45,11 +73,16 @@ export function extractSpecLocal(transcript: string): AgentSpec {
 
   const needsPrice = /\$|price|sol|eth|btc|usdc|jup|bonk|ray|rises|above|below/i.test(text);
   const needsWallet = /wallet|balance|my (sol|account)/i.test(text);
+  const mkt = marketIntent(text);
+
+  // Market-wide monitors (fear & greed / dominance / market cap) take
+  // precedence: their block output is the subject, not a token price.
+  const needsMarket = mkt !== null && !needsWallet;
 
   let priceId: string | undefined;
   let balId: string | undefined;
 
-  if (needsPrice || !needsWallet) {
+  if (needsPrice && !needsMarket) {
     priceId = nid();
     steps.push({ id: priceId, block: "price.get", params: { token, currency: "USD" } });
   }
@@ -58,11 +91,28 @@ export function extractSpecLocal(transcript: string): AgentSpec {
     steps.push({ id: balId, block: "wallet.getBalance", params: { chain: "solana", address: "MISSING_WALLET_ADDRESS" } });
     missingFields.push("wallet_address");
   }
+  if (needsMarket) {
+    const mktId = nid();
+    steps.push({
+      id: mktId,
+      block: mkt === "fearGreed" ? "market.fearGreed" : "market.globalMetrics",
+      params: mkt === "fearGreed" ? {} : { currency: "USD" },
+    });
+    const th = thresholdOf(text);
+    if (th) {
+      const field = mkt === "fearGreed" ? "value" : mkt === "dominance" ? "btcDominance" : "totalMarketCap";
+      steps.push({ id: nid(), block: "condition.compare", params: { left: `${mktId}.${field}`, op: th.dir, right: th.n } });
+    } else {
+      missingFields.push(mkt === "fearGreed" ? "fear_greed_threshold" : "market_threshold");
+    }
+  }
 
   // Percent-change rule: "drops by 10%" / "down 10% in the last hour"
+  // (price/wallet paths only — market-wide monitors use their own threshold).
   const pct =
-    text.match(/(?:drop?s?|fall?s?|fell|rise?s?|rose|increas\w*|decreas\w*|down|up)\s+(?:by\s+)?(?:more\s+than\s+|at\s+least\s+)?(\d+(?:\.\d+)?)\s*%/i) ??
-    text.match(/(\d+(?:\.\d+)?)\s*%\s*(?:drop|fall|rise|change|in)/i);
+    !needsMarket &&
+    (text.match(/(?:drop?s?|fall?s?|fell|rise?s?|rose|increas\w*|decreas\w*|down|up)\s+(?:by\s+)?(?:more\s+than\s+|at\s+least\s+)?(\d+(?:\.\d+)?)\s*%/i) ??
+      text.match(/(\d+(?:\.\d+)?)\s*%\s*(?:drop|fall|rise|change|in)/i));
   const window =
     text.match(/in (?:the )?last (?:\d+ )?(second|minute|hour|day)/i)?.[1] ??
     text.match(/(\d+m|\d+h)/i)?.[1] ??
@@ -93,9 +143,10 @@ export function extractSpecLocal(transcript: string): AgentSpec {
 
   // Absolute threshold: "below $150" / "above $2000". Only when a direction
   // or a $ sign is present — so "by 10%" never double-fires as a compare.
+  // Skipped for market-wide monitors (their threshold is already a compare).
   const hasDir = /below|under|above|over|exceeds?|drops?\s+(?:below|to)|falls?\s+(?:below|to)|rises?\s+(?:above|to)/i.test(text);
   const hasDollar = /\$/.test(text);
-  if (!pct || hasDir || hasDollar) {
+  if (!needsMarket && (!pct || hasDir || hasDollar)) {
     const abs = text.match(/\$\s*(\d+(?:\.\d+)?)/i) ?? text.match(/(\d+(?:\.\d+)?)\s*(?!%)/);
     if (abs && (hasDir || hasDollar)) {
       const dir = /below|under|drops?|falls?|fell|</i.test(text) ? "<" : ">";
@@ -107,21 +158,42 @@ export function extractSpecLocal(transcript: string): AgentSpec {
   }
 
   const hasCond = steps.some((s) => s.block.startsWith("condition."));
+  // Guarantee at least one step (schema requires min 1): default to a price
+  // fetch when nothing specific was detected.
+  if (steps.length === 0) {
+    priceId = nid();
+    steps.push({ id: priceId, block: "price.get", params: { token, currency: "USD" } });
+  }
+  // Market message references live block outputs with ${sN.field} tokens.
+  let marketMessage = "";
+  if (needsMarket) {
+    const mktStep = steps.find((s) => s.block === "market.fearGreed" || s.block === "market.globalMetrics");
+    const id = mktStep?.id ?? "s1";
+    marketMessage =
+      mkt === "fearGreed"
+        ? `📈 Fear & Greed alert (${hasCond ? "condition met" : "update"}). Index: \${${id}.value} (\${${id}.classification})`
+        : `📈 Market alert (${hasCond ? "condition met" : "update"}). Market cap: \${${id}.totalMarketCap} · BTC dominance: \${${id}.btcDominance}%`;
+  }
   const spec: AgentSpec = {
     name:
-      needsWallet && needsPrice
-        ? `${token} Price + Balance Monitor`
-        : needsWallet
-          ? "Wallet Balance Monitor"
-          : `${token} Price Alert`,
+      needsMarket
+        ? mkt === "fearGreed"
+          ? "Market Sentiment Alert"
+          : "Market Cap Monitor"
+        : needsWallet && needsPrice
+          ? `${token} Price + Balance Monitor`
+          : needsWallet
+            ? "Wallet Balance Monitor"
+            : `${token} Price Alert`,
     trigger: { type: "interval", every },
     steps,
     actions: [
       {
         block: "notify.telegram",
         params: {
-          message:
-            needsWallet && !needsPrice
+          message: needsMarket
+            ? marketMessage
+            : needsWallet && !needsPrice
               ? `🚨 Wallet balance alert (${hasCond ? "condition met" : "update"}). Balance: \${${balId}.balance}`
               : `⚠️ ${token} alert (${hasCond ? "condition met" : "update"}). Price: \${${priceId}.price}`,
         },

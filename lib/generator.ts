@@ -14,6 +14,10 @@ export function generateCode(spec: AgentSpec): string {
           return `  // ${s.id}: current price\n  outputs["${s.id}"] = await getPrice(${JSON.stringify((s.params as any).token)}, ${JSON.stringify((s.params as any).currency ?? "USD")});`;
         case "wallet.getBalance":
           return `  // ${s.id}: wallet balance\n  outputs["${s.id}"] = await getBalance(${JSON.stringify((s.params as any).chain ?? "solana")}, ${JSON.stringify((s.params as any).address)});`;
+        case "market.fearGreed":
+          return `  // ${s.id}: fear & greed\n  outputs["${s.id}"] = await getFearGreed();`;
+        case "market.globalMetrics":
+          return `  // ${s.id}: global metrics\n  outputs["${s.id}"] = await getGlobalMetrics(${JSON.stringify((s.params as any).currency ?? "USD")});`;
         case "condition.compare":
           return `  // ${s.id}: compare\n  outputs["${s.id}"] = compare(resolveNum("${(s.params as any).left}", outputs), ${JSON.stringify((s.params as any).op)}, ${JSON.stringify((s.params as any).right)});`;
         case "condition.percentChange":
@@ -32,6 +36,7 @@ export function generateCode(spec: AgentSpec): string {
 // Trigger: ${spec.trigger.type}${spec.trigger.every ? ` every ${spec.trigger.every}` : ""}
 import { getPrice } from "./blocks/price";
 import { getBalance } from "./blocks/wallet";
+import { getFearGreed, getGlobalMetrics } from "./blocks/market";
 import { compare, percentChangeCheck } from "./blocks/condition";
 import { renderMessage, sendTelegram } from "./blocks/notify";
 

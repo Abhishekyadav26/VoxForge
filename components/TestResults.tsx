@@ -7,6 +7,13 @@ import { Button } from "@/components/ui/button";
 import toast from "react-hot-toast";
 import type { AgentSpec } from "@/lib/spec-schema";
 
+function formatMarket(n: number): string {
+  if (n >= 1e12) return `$${(n / 1e12).toFixed(2)}T`;
+  if (n >= 1e9) return `$${(n / 1e9).toFixed(1)}B`;
+  if (n >= 1e6) return `$${(n / 1e6).toFixed(1)}M`;
+  return `$${n.toFixed(0)}`;
+}
+
 interface TraceLine { stepId: string; block: string; detail: string; output: Record<string, unknown>; }
 
 /** Dry-run the spec server-side; shows a step-by-step trace. */
@@ -31,6 +38,8 @@ export default function TestResults({ spec }: { spec: AgentSpec }) {
     {state?.trace && (() => {
       const priceStep = (state.trace as any[]).find((t: any) => t.output && typeof t.output.price === "number");
       const balStep = (state.trace as any[]).find((t: any) => t.output && typeof t.output.balance === "number");
+      const fgStep = (state.trace as any[]).find((t: any) => t.block === "market.fearGreed" && t.output && typeof t.output.value === "number");
+      const gmStep = (state.trace as any[]).find((t: any) => t.block === "market.globalMetrics" && t.output && typeof t.output.totalMarketCap === "number");
       const priceOut = priceStep?.output;
       const balOut = balStep?.output;
       // Which token are we pricing? (from the price.get step params)
@@ -39,6 +48,28 @@ export default function TestResults({ spec }: { spec: AgentSpec }) {
       const pctStep = (state.trace as any[]).find((t: any) => typeof t.output?.actualChange === "number");
       const pct: number | undefined = pctStep?.output?.actualChange;
       return (<>
+        {fgStep?.output && (
+          <div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full text-lg" style={{ background: (fgStep.output as any).value < 40 ? "#7f1d1d" : (fgStep.output as any).value > 60 ? "#14532d" : "#1e3a8a", color: "#fff" }}>
+              {(fgStep.output as any).value}
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-slate-200">Fear &amp; Greed: {(fgStep.output as any).classification}</p>
+              <p className="text-xs text-slate-400">CMC Crypto Fear &amp; Greed index (0–100)</p>
+            </div>
+          </div>
+        )}
+        {gmStep?.output && (
+          <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 text-sm">
+            <p className="text-sm font-semibold text-slate-200">Global market</p>
+            <div className="mt-1 flex flex-wrap gap-x-6 gap-y-1 text-slate-300">
+              <span>Market cap: <strong className="text-slate-100">${formatMarket((gmStep.output as any).totalMarketCap)}</strong></span>
+              <span>24h volume: <strong className="text-slate-100">${formatMarket((gmStep.output as any).totalVolume24h)}</strong></span>
+              <span>BTC dom: <strong className="text-slate-100">{(gmStep.output as any).btcDominance.toFixed(1)}%</strong></span>
+              <span>ETH dom: <strong className="text-slate-100">{(gmStep.output as any).ethDominance.toFixed(1)}%</strong></span>
+            </div>
+          </div>
+        )}
         {priceOut && (
           <TokenStatCard
             ticker={ticker}
