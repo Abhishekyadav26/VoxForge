@@ -10,11 +10,15 @@ import InkOrbitFeatures from "@/components/ui/ink-orbit-features"
 export default function HomeFeatures() {
   return (
     <>
-      <style>{`
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
         .ib-bleed{padding:0 !important}
         .ib-bleed .ib-shell{max-width:none}
         .ib-bleed .ib-sec{border:0}
-      `}</style>
+      `,
+        }}
+      />
       <InkOrbitFeatures
         className="ib-bleed"
         style={{ padding: 0 }}

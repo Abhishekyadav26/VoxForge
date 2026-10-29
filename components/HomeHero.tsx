@@ -14,11 +14,15 @@ export default function HomeHero() {
   const router = useTransitionRouter()
   return (
     <>
-      <style>{`
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
         .ih-bleed{padding:0 !important}
         .ih-bleed .ih-shell{max-width:none}
         .ih-bleed .ih-sec{border:0}
-      `}</style>
+      `,
+        }}
+      />
       <InkOrbitHero
         className="ih-bleed"
         style={{ padding: 0 }}

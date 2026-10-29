@@ -161,7 +161,7 @@ export default function InkOrbitFeatures({
 
   return (
     <div className={"ib-root " + className} data-theme={dark ? "dark" : "light"} style={style}>
-      <style>{IB_CSS}</style>
+      <style dangerouslySetInnerHTML={{ __html: IB_CSS }} />
       <div className="ib-shell">
         <section className="ib-sec" aria-labelledby={uid + "feat"}>
           <div className="ib-reveal" ref={featRef as never} data-in={featIn}>
