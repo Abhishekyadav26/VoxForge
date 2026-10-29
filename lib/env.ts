@@ -11,6 +11,11 @@ export const EnvSchema = z.object({
   COINMARKETCAP_API_KEY: z.string().optional(),
   GROQ_API_KEY: z.string().optional(),
   GROQ_MODEL: z.string().optional(),
+  // Supabase persistence: when both are set, agents/runs are stored in the
+  // cloud (service-role key, server-side only). Otherwise the app falls back
+  // to local JSON files (see lib/db.ts).
+  SUPABASE_URL: z.string().optional(),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
