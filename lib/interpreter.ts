@@ -3,7 +3,7 @@ import { getPrice } from "./blocks/price";
 import { getBalance } from "./blocks/wallet";
 import { getFearGreed, getGlobalMetrics, formatUsd } from "./blocks/market";
 import { compare, percentChangeCheck, CompareOp } from "./blocks/condition";
-import { renderMessage, sendTelegram } from "./blocks/notify";
+import { renderMessage, sendTelegram, formatNum } from "./blocks/notify";
 
 /**
  * Pick the real percent change from a step output (price.get carries
@@ -70,7 +70,7 @@ export async function runSpec(
           outputs[step.id] = r as unknown as Record<string, unknown>;
           trace.push({
             stepId: step.id, block: step.block,
-            detail: `${p.token} price = $${r.price}`,
+            detail: `${p.token} price = $${formatNum(r.price)}`,
             output: outputs[step.id],
           });
           break;

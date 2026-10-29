@@ -26,6 +26,17 @@ export async function sendTelegram(
   return { ok: true, dryRun: false, chatId };
 }
 
+/** Format a numeric value for display: 2 decimals, but keep tiny prices
+ *  readable (BONK at $0.000003 shouldn't round to $0.00). */
+export function formatNum(v: unknown): string {
+  const n = typeof v === "number" ? v : Number(v);
+  if (Number.isNaN(n)) return String(v ?? "");
+  if (!Number.isFinite(n)) return String(n);
+  const abs = Math.abs(n);
+  const dp = abs > 0 && abs < 0.01 ? 6 : 2;
+  return n.toFixed(dp);
+}
+
 /** Interpolate ${s1.price} style refs from step outputs. */
 export function renderMessage(
   template: string,
@@ -33,6 +44,6 @@ export function renderMessage(
 ): string {
   return template.replace(/\$\{(s\d+)\.([a-zA-Z0-9_]+)\}/g, (_, sid, field) => {
     const v = stepOutputs[sid]?.[field];
-    return v === undefined || v === null ? "" : String(v);
+    return v === undefined || v === null ? "" : formatNum(v);
   });
 }

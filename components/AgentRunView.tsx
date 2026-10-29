@@ -8,6 +8,7 @@ import {
   type TraceNode,
 } from "@/components/ui/ai-agent-response";
 import { TrendingUp, GitCompare, Send, Wallet, Gauge, Layers, Bell } from "lucide-react";
+import { formatNum } from "@/lib/blocks/notify";
 
 /* ─────────────────────────────────────────────────────────
  * VoxForge tool registry: real monitor blocks, styled like the
@@ -77,12 +78,12 @@ function traceNode(line: {
 
   if (price !== undefined) {
     details.push({
-      text: `Price: $${price.toLocaleString("en-US", { maximumFractionDigits: 6 })}${chg !== undefined ? `  ·  24h ${chg >= 0 ? "+" : ""}${chg.toFixed(2)}%` : ""}`,
+      text: `Price: $${formatNum(price)}${chg !== undefined ? `  ·  24h ${chg >= 0 ? "+" : ""}${chg.toFixed(2)}%` : ""}`,
       tone: "add",
     });
   }
   if (balance !== undefined) {
-    details.push({ text: `Balance: ${balance.toLocaleString("en-US", { maximumFractionDigits: 6 })} SOL`, tone: "add" });
+    details.push({ text: `Balance: ${formatNum(balance)} SOL`, tone: "add" });
   }
   if (fg !== undefined) {
     const cls = String(out.classification ?? "");
