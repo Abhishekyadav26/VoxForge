@@ -13,7 +13,7 @@ import { TrendingUp, GitCompare, Send, Wallet, Gauge, Layers, Bell } from "lucid
  * VoxForge tool registry: real monitor blocks, styled like the
  * component's default registry but mapped to the engine's blocks.
  * ───────────────────────────────────────────────────────── */
-const VF_TOOLS: Record<string, ToolDefinition> = {
+export const VF_TOOLS: Record<string, ToolDefinition> = {
   "price.get": {
     name: "price.get",
     label: "Live price",
@@ -111,7 +111,7 @@ function traceNode(line: {
  * Splits the user's voice prompt into the rough thought chunks
  * the extractor uses when it builds the plan.
  * ───────────────────────────────────────────────────────── */
-function reasoningFromTranscript(transcript: string): string[] {
+export function reasoningFromTranscript(transcript: string): string[] {
   const t = transcript.trim();
   if (!t) {
     return ["Reading your alert request…", "No transcript yet — say something like “warn me when SOL drops below $150”."];
