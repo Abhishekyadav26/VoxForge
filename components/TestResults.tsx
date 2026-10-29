@@ -2,6 +2,7 @@
 import { forwardRef, useImperativeHandle, useState } from "react";
 import { NumberTicker } from "@/components/ui/number-ticker";
 import { TokenStatCard } from "@/components/TokenStatCard";
+import AgentRunView from "@/components/AgentRunView";
 import { Play } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import toast from "react-hot-toast";
@@ -110,9 +111,15 @@ const TestResults = forwardRef<TestResultsHandle, { spec: AgentSpec }>(
         )}
       </>);
     })()}
-    {state?.trace && (<ol className="space-y-1 rounded border border-slate-700 bg-slate-900 p-3 text-sm">
-      {state.trace.map((t: TraceLine, i: number) => (<li key={i} className="text-slate-300"><span className="font-mono text-slate-100">{t.stepId}</span> · {t.detail}</li>))}
-    </ol>)}
+    {state?.trace && (
+      <AgentRunView
+        transcript={spec.name}
+        trace={(state.trace as TraceLine[]).map((t) => ({ stepId: t.stepId, block: t.block, detail: t.detail, output: t.output ?? {} }))}
+        triggered={!!state.triggered}
+        messages={state.messages}
+        error={state.error}
+      />
+    )}
     {state?.triggered !== undefined && (<p className={"text-sm font-semibold " + (state.triggered ? "text-slate-200" : "text-slate-400")}>{state.triggered ? "Conditions met — alert would fire" : "✓ Conditions not met — no alert"}</p>)}
     {state?.messages?.length > 0 && state.messages.map((m: string, i: number) => <div key={i} className="rounded border border-slate-600 bg-slate-900/60 p-2 text-sm">{m}<div className="mt-1 text-xs text-slate-400">(dry-run — not sent)</div></div>)}
     {state?.error && <p className="text-sm text-slate-300">{state.error}</p>}
