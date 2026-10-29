@@ -64,6 +64,15 @@ export default function VoiceRecorder({ onTranscript, onPartial, onError, onComm
   const recRef = useRef<SR | null>(null);
   const finalRef = useRef("");
 
+  // Callbacks always read through a ref so the SpeechRecognition instance
+  // (created once below) never needs to be torn down when the parent re-renders
+  // with a new onCommand/onTranscript identity. Without this, every transcript
+  // update recreates the recognizer and the "generate plan" command is lost.
+  const cbRef = useRef({ onTranscript, onPartial, onError, onCommand });
+  useEffect(() => {
+    cbRef.current = { onTranscript, onPartial, onError, onCommand };
+  });
+
   useEffect(() => {
     setSupported(
       !!(window as any).SpeechRecognition || !!(window as any).webkitSpeechRecognition
@@ -78,6 +87,7 @@ export default function VoiceRecorder({ onTranscript, onPartial, onError, onComm
     rec.continuous = true;
     rec.interimResults = true;
     rec.onresult = (e: any) => {
+      const { onTranscript, onPartial, onCommand } = cbRef.current;
       let interim = "";
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const r = e.results[i];
@@ -100,10 +110,25 @@ export default function VoiceRecorder({ onTranscript, onPartial, onError, onComm
       setLiveText(interim);
       onPartial?.(finalRef.current + interim);
     };
-    rec.onerror = (e: any) => { const msg = e?.error ?? "Speech recognition error"; onError?.(msg); toast.error(msg); };
+    rec.onerror = (e: any) => {
+      const msg = e?.error ?? "Speech recognition error";
+      cbRef.current.onError?.(msg);
+      toast.error(msg);
+    };
     rec.onend = () => setListening(false);
     recRef.current = rec;
-  }, [supported, onPartial, onError, onCommand]);
+    return () => {
+      // Teardown the recognizer (not just orphan it) so a fresh session
+      // starts clean next time.
+      try {
+        rec.stop();
+      } catch {
+        /* already stopped */
+      }
+      if (recRef.current === rec) recRef.current = null;
+      finalRef.current = "";
+    };
+  }, [supported]);
 
   const toggle = useCallback(() => {
     const rec = recRef.current;
