@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import toast from "react-hot-toast";
 import { Play } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 export default function RunButton({ agentId }: { agentId: string }) {
@@ -13,7 +14,8 @@ export default function RunButton({ agentId }: { agentId: string }) {
       const json = await res.json();
       if (!json.success) throw new Error(json.error);
       setState(json.data);
-    } catch (e: any) { setError(e.message); } finally { setLoading(false); }
+      toast.success(json.data.triggered ? "Triggered — alert sent" : "No trigger — conditions not met");
+    } catch (e: any) { setError(e.message); toast.error(e.message); } finally { setLoading(false); }
   }
   return (<div className="space-y-2">
     <Button size="sm" onClick={runNow} disabled={loading}><Play />{loading ? "Running…" : "Run now (dry)"}</Button>

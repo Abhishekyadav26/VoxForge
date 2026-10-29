@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import toast from "react-hot-toast";
 import type { AgentSpec } from "@/lib/spec-schema";
 
 interface Props {
@@ -31,6 +32,6 @@ export default function EditSpecPanel({ spec, stepId, onSave }: Props) {
       </div>);
     })}
     {isCond && <p className="mb-3 text-xs text-slate-500">Refs like {"{s1.price}"} point at earlier step outputs.</p>}
-    <Button size="sm" onClick={() => { const next = { ...spec, steps: spec.steps.map((s) => s.id === step.id ? { ...s, params: draft } : s) }; onSave(next); }}>Save step</Button>
+    <Button size="sm" onClick={() => { const next = { ...spec, steps: spec.steps.map((s) => s.id === step.id ? { ...s, params: draft } : s) }; onSave(next); toast.success("Step saved"); }}>Save step</Button>
   </div>);
 }

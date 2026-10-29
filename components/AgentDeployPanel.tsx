@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import toast from "react-hot-toast";
 import type { AgentSpec } from "@/lib/spec-schema";
 
 interface Props { spec: AgentSpec; onSpecChange: (s: AgentSpec) => void; }
@@ -20,13 +21,18 @@ export default function AgentDeployPanel({ spec, onSpecChange }: Props) {
   const addrStep = spec.steps.find((s) => s.block === "wallet.getBalance" && (s.params as any).address === "MISSING_WALLET_ADDRESS");
 
   async function deploy() {
+    if (needsAddress && addrStep && (addrStep.params as any).address === "MISSING_WALLET_ADDRESS") {
+      toast.error("Add your Solana wallet address first");
+      return;
+    }
     setLoading(true); setError(null); setResult(null);
     try {
       const res = await fetch("/api/deploy-agent", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ spec }) });
       const json = await res.json();
       if (!json.success) throw new Error(json.error);
       setResult(json.data);
-    } catch (e: any) { setError(e.message); } finally { setLoading(false); }
+      toast.success("Agent deployed");
+    } catch (e: any) { setError(e.message); toast.error(e.message); } finally { setLoading(false); }
   }
   function setAddress(v: string) {
     if (!addrStep) return;

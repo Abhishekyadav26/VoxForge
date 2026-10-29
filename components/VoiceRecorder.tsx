@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
+import toast from "react-hot-toast";
 import { Mic } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 
@@ -42,7 +43,7 @@ export default function VoiceRecorder({ onTranscript, onPartial, onError }: Prop
       setLiveText(interim);
       onPartial?.(finalRef.current + interim);
     };
-    rec.onerror = (e: any) => { onError?.(e?.error ?? "Speech recognition error"); };
+    rec.onerror = (e: any) => { const msg = e?.error ?? "Speech recognition error"; onError?.(msg); toast.error(msg); };
     rec.onend = () => setListening(false);
     recRef.current = rec;
   }, [supported, onPartial, onError]);
@@ -53,7 +54,7 @@ export default function VoiceRecorder({ onTranscript, onPartial, onError }: Prop
     if (listening) {
       rec.stop();
       const finalText = finalRef.current.trim();
-      if (finalText) onTranscript(finalText);
+      if (finalText) { onTranscript(finalText); toast.success("Transcript added"); }
       finalRef.current = ""; setLiveText("");
     } else {
       rec.start(); setListening(true);

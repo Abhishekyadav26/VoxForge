@@ -8,6 +8,7 @@ import TestResults from "@/components/TestResults";
 import AgentDeployPanel from "@/components/AgentDeployPanel";
 import { Bolt } from "@/components/icons";
 import { Button } from "@/components/ui/button";
+import toast from "react-hot-toast";
 import type { AgentSpec } from "@/lib/spec-schema";
 
 export default function StudioPage() {
@@ -24,7 +25,8 @@ export default function StudioPage() {
       const json = await res.json();
       if (!json.success) throw new Error(json.error);
       setSpec(json.data);
-    } catch (e: any) { setError(e.message); } finally { setLoading(false); }
+      toast.success("Plan generated");
+    } catch (e: any) { setError(e.message); toast.error(e.message); } finally { setLoading(false); }
   }
 
   return (<main className="mx-auto max-w-5xl space-y-5 px-4 pt-20">

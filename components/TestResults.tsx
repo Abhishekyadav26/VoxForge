@@ -4,6 +4,7 @@ import { NumberTicker } from "@/components/ui/number-ticker";
 import { TokenStatCard } from "@/components/TokenStatCard";
 import { Play } from "@/components/icons";
 import { Button } from "@/components/ui/button";
+import toast from "react-hot-toast";
 import type { AgentSpec } from "@/lib/spec-schema";
 
 interface TraceLine { stepId: string; block: string; detail: string; output: Record<string, unknown>; }
@@ -20,7 +21,8 @@ export default function TestResults({ spec }: { spec: AgentSpec }) {
       const json = await res.json();
       if (!json.success) throw new Error(json.error);
       setState(json.data);
-    } catch (e: any) { setError(e.message); } finally { setLoading(false); }
+      toast.success(json.data.triggered ? "Conditions met — alert would fire" : "No trigger — conditions not met");
+    } catch (e: any) { setError(e.message); toast.error(e.message); } finally { setLoading(false); }
   }
   return (<section className="space-y-2">
     <h2 className="text-lg font-semibold">Dry Run</h2>

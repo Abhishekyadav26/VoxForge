@@ -2,6 +2,7 @@ import "./globals.css";
 import { ViewTransitions } from "next-view-transitions";
 import { Link } from "next-view-transitions";
 import { Mic } from "@/components/icons";
+import Toaster from "@/components/ui/toaster";
 
 export const metadata = {
   title: "Voice-to-Agent Studio",
@@ -37,6 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
           </header>
           {children}
+          <Toaster />
         </body>
       </html>
     </ViewTransitions>
