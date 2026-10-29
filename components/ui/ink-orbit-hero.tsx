@@ -26,6 +26,8 @@ export type InkOrbitHeroProps = {
   onSecondary?: () => void
   /** The steps the demo dialog plays through. `[]` = no dialog. */
   demoSteps?: InkDemoStep[]
+  /** Copy for the demo dialog footer (running / done). */
+  demoFoot?: { running: string; done: string }
   /** "Loved by <value> teams". `null` hides the row. */
   proof?: { before: string; value: string; after: string } | null
   sculptureSeed?: number
@@ -42,6 +44,7 @@ export type InkOrbitHeroProps = {
 /* --------------------------------------------------------------- defaults */
 
 const D_ACCENTS = ["Intelligent Automation", "Adaptive Workflows", "Autonomous Agents"]
+const D_FOOT = { running: "Sit back — nothing here needs a human.", done: "Saved ~3h 40m of manual work." }
 const D_STEPS: InkDemoStep[] = [
   { label: "Ingest", detail: "Pulling 2,184 rows from Sheets, CRM and support inbox" },
   { label: "Classify", detail: "Tagging intents and routing to the right owners" },
@@ -62,6 +65,7 @@ export default function InkOrbitHero({
   secondaryCta = "Watch Demo",
   onSecondary,
   demoSteps = D_STEPS,
+  demoFoot = D_FOOT,
   proof = { before: "Loved by", value: "12,400+", after: "teams" },
   sculptureSeed = 7,
   onReforge,
@@ -193,7 +197,7 @@ export default function InkOrbitHero({
           </div>
         </section>
       </div>
-      {demo && <DemoDialog steps={demoSteps} onClose={closeDemo} reduced={reduced} />}
+      {demo && <DemoDialog steps={demoSteps} onClose={closeDemo} reduced={reduced} foot={demoFoot} />}
     </div>
   )
 }
@@ -281,7 +285,7 @@ function Portrait({ index, size = 38, uid }: { index: number; size?: number; uid
   )
 }
 
-function DemoDialog({ steps, onClose, reduced }: { steps: InkDemoStep[]; onClose: () => void; reduced: boolean }) {
+function DemoDialog({ steps, onClose, reduced, foot }: { steps: InkDemoStep[]; onClose: () => void; reduced: boolean; foot: { running: string; done: string } }) {
   const [elapsed, setElapsed] = React.useState(0)
   const [run, setRun] = React.useState(0)
   const closeRef = React.useRef(null as HTMLButtonElement | null)
@@ -344,7 +348,7 @@ function DemoDialog({ steps, onClose, reduced }: { steps: InkDemoStep[]; onClose
           <i style={{ width: (elapsed / total) * 100 + "%" }} />
         </div>
         <div className="ih-dialog-foot">
-          <span>{done ? "Saved ~3h 40m of manual work." : "Sit back — nothing here needs a human."}</span>
+          <span>{done ? foot.done : foot.running}</span>
           <button type="button" className="ih-btn ih-btn-ghost" onClick={() => setRun((r) => r + 1)} disabled={!done}>
             Replay
           </button>
