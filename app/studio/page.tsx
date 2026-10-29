@@ -6,6 +6,7 @@ import PlanGraph from "@/components/PlanGraph";
 import EditSpecPanel from "@/components/EditSpecPanel";
 import TestResults, { type TestResultsHandle } from "@/components/TestResults";
 import AgentDeployPanel, { type AgentDeployHandle } from "@/components/AgentDeployPanel";
+import TelegramConnect from "@/components/TelegramConnect";
 import { Bolt } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import toast from "react-hot-toast";
@@ -67,6 +68,7 @@ export default function StudioPage() {
       onCommand={handleCommand}
     />
     <TranscriptPanel transcript={transcript} onChange={setTranscript} />
+    <TelegramConnect />
     <Button onClick={extract} disabled={loading || !transcript.trim()}><Bolt />{loading ? "Extracting…" : "Generate Plan"}</Button>
     {error && <p className="text-sm text-slate-300">Error: {error}</p>}
     {spec && (<>

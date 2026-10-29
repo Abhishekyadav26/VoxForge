@@ -54,9 +54,10 @@ function getRef(ref: string, outputs: Record<string, Record<string, unknown>>): 
  */
 export async function runSpec(
   spec: AgentSpec,
-  opts?: { dryRun?: boolean; mockActualChange?: number }
+  opts?: { dryRun?: boolean; mockActualChange?: number; telegramChatId?: string }
 ): Promise<RunResult> {
   const dryRun = opts?.dryRun ?? false;
+  const telegramChatId = opts?.telegramChatId;
   const outputs: Record<string, Record<string, unknown>> = {};
   const trace: TraceLine[] = [];
 
@@ -150,7 +151,7 @@ export async function runSpec(
       for (const a of spec.actions) {
         const msg = renderMessage(a.params.message, outputs);
         messages.push(msg);
-        await sendTelegram(msg, { dryRun });
+        await sendTelegram(msg, { dryRun, chatId: telegramChatId });
       }
     }
     return { success: true, triggered, trace, messages };

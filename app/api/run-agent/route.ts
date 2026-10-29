@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getAgent, saveRun, markAgentRun } from "@/lib/db";
+import { getAgent, saveRun, markAgentRun, getUserById } from "@/lib/db";
 import { runSpec } from "@/lib/interpreter";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -13,9 +13,16 @@ export async function POST(req: Request) {
     const { agentId, dryRun } = Body.parse(await req.json());
     const agent = await getAgent(agentId, session.user.id);
     if (!agent) return NextResponse.json({ success: false, error: "Agent not found" }, { status: 404 });
+    // Alerts go to the agent owner's bound Telegram chat when they linked one;
+    // otherwise the global TELEGRAM_CHAT_ID env var (dashboard owner) is used.
+    let telegramChatId: string | undefined;
+    if (agent.userId) {
+      const owner = await getUserById(agent.userId);
+      telegramChatId = owner?.telegramChatId;
+    }
     // Real run by default: actually sends the Telegram alert. The Studio's
     // dry-run trace goes through /api/test-spec instead (always dryRun: true).
-    const result = await runSpec(agent.spec, { dryRun: dryRun ?? false });
+    const result = await runSpec(agent.spec, { dryRun: dryRun ?? false, telegramChatId });
     await markAgentRun(agentId, result.triggered, session.user.id);
     const run = await saveRun({ agentId, triggered: result.triggered, trace: result.trace, messages: result.messages }, session.user.id);
     return NextResponse.json({ success: true, data: { ...result, runId: run.id } });

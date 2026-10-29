@@ -38,3 +38,11 @@ export function Play({ size = 13, className }: { size?: number; className?: stri
     </svg>
   )
 }
+
+export function TelegramIcon({ size = 16, className }: { size?: number; className?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+      <path d="M21.94 4.07c.19-.88-.64-1.6-1.47-1.29L2.7 9.24c-1.15.43-1.04 2.11.15 2.39l4.52 1.06 1.66 5.25c.32 1.01 1.63 1.18 2.2.28l2.06-3.25 4.24 3.12c.82.6 1.99.14 2.2-.87l2.2-13.15zm-13.2 7.74 8.8-5.49c.3-.18.61.2.34.43l-6.8 6.02c-.31.27-.52.64-.6 1.04l-.29 1.84c-.05.33-.51.36-.6.04l-.9-3.2a.85.85 0 0 1 .05-.68z" />
+    </svg>
+  )
+}

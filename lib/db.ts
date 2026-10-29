@@ -32,6 +32,11 @@ export interface UserRecord {
   /** bcrypt hash; undefined for OAuth-only accounts (e.g. Google sign-in). */
   passwordHash?: string;
   createdAt: string;
+  /** Per-user Telegram chat; alerts go here once bound (else env fallback). */
+  telegramChatId?: string;
+  /** One-time bind code shown to the user (expires). */
+  telegramCode?: string;
+  telegramCodeExpiresAt?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -52,6 +57,11 @@ interface Storage {
   createUser(user: { email: string; name?: string; passwordHash?: string }): Promise<UserRecord>;
   /** Look up by email, or create a stub for an OAuth sign-in (no password). */
   findOrCreateOAuthUser(user: { email: string; name?: string }): Promise<UserRecord>;
+  getUserById(id: string): Promise<UserRecord | undefined>;
+  /** Store (or refresh) the user's Telegram bind code with an expiry. */
+  setTelegramBind(userId: string, code: string, expiresAt: string): Promise<void>;
+  /** Consume a bind code: link the chat_id to the user, clear the code. */
+  bindTelegramChat(code: string, chatId: string): Promise<string | undefined>;
 }
 
 // ---------- Supabase backend ----------
@@ -230,6 +240,48 @@ const supabaseStorage: Storage = {
     if (existing) return existing;
     return this.createUser({ email: user.email, name: user.name });
   },
+  async getUserById(id) {
+    const sb = getSupabase();
+    if (!sb) throw new Error("Supabase not configured");
+    const { data, error } = await sb.from("users").select("*").eq("id", id).maybeSingle();
+    if (error) throw new Error(`Supabase getUserById failed: ${error.message}`);
+    if (!data) return undefined;
+    return {
+      id: data.id,
+      email: data.email,
+      name: data.name ?? undefined,
+      passwordHash: data.password_hash ?? undefined,
+      createdAt: data.created_at ?? new Date().toISOString(),
+      telegramChatId: data.telegram_chat_id ?? undefined,
+    };
+  },
+  async setTelegramBind(userId, code, expiresAt) {
+    const sb = getSupabase();
+    if (!sb) throw new Error("Supabase not configured");
+    const { error } = await sb
+      .from("users")
+      .update({ telegram_code: code, telegram_code_expires_at: expiresAt })
+      .eq("id", userId);
+    if (error) throw new Error(`Supabase setTelegramBind failed: ${error.message}`);
+  },
+  async bindTelegramChat(code, chatId) {
+    const sb = getSupabase();
+    if (!sb) throw new Error("Supabase not configured");
+    const { data, error } = await sb
+      .from("users")
+      .select("id")
+      .eq("telegram_code", code)
+      .gt("telegram_code_expires_at", new Date().toISOString())
+      .maybeSingle();
+    if (error) throw new Error(`Supabase bindTelegramChat lookup failed: ${error.message}`);
+    if (!data) return undefined;
+    const { error: upErr } = await sb
+      .from("users")
+      .update({ telegram_chat_id: chatId, telegram_code: null, telegram_code_expires_at: null })
+      .eq("id", data.id);
+    if (upErr) throw new Error(`Supabase bindTelegramChat bind failed: ${upErr.message}`);
+    return data.id as string;
+  },
 };
 
 // ---------- Local JSON-file backend (fallback) ----------
@@ -350,6 +402,34 @@ const fileStorage: Storage = {
     if (existing) return existing;
     return this.createUser({ email: user.email, name: user.name });
   },
+  async getUserById(id) {
+    const users = await readJson<UserRecord[]>(await usersFile(), []);
+    const u = users.find((u) => u.id === id);
+    return u ? { ...u } : undefined;
+  },
+  async setTelegramBind(userId, code, expiresAt) {
+    const users = await readJson<UserRecord[]>(await usersFile(), []);
+    const u = users.find((x) => x.id === userId);
+    if (!u) throw new Error("User not found");
+    u.telegramCode = code;
+    u.telegramCodeExpiresAt = expiresAt;
+    await writeJson(await usersFile(), users);
+  },
+  async bindTelegramChat(code, chatId) {
+    const users = await readJson<UserRecord[]>(await usersFile(), []);
+    const u = users.find(
+      (x) =>
+        x.telegramCode === code &&
+        x.telegramCodeExpiresAt &&
+        new Date(x.telegramCodeExpiresAt).getTime() > Date.now()
+    );
+    if (!u) return undefined;
+    u.telegramChatId = chatId;
+    delete u.telegramCode;
+    delete u.telegramCodeExpiresAt;
+    await writeJson(await usersFile(), users);
+    return u.id;
+  },
 };
 
 // ---------- Dispatch ----------
@@ -426,4 +506,20 @@ export async function findOrCreateOAuthUser(user: {
   name?: string;
 }): Promise<UserRecord> {
   return getStorage().findOrCreateOAuthUser(user);
+}
+export async function getUserById(id: string): Promise<UserRecord | undefined> {
+  return getStorage().getUserById(id);
+}
+export async function setTelegramBind(
+  userId: string,
+  code: string,
+  expiresAt: string
+): Promise<void> {
+  return getStorage().setTelegramBind(userId, code, expiresAt);
+}
+export async function bindTelegramChat(
+  code: string,
+  chatId: string
+): Promise<string | undefined> {
+  return getStorage().bindTelegramChat(code, chatId);
 }
