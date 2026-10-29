@@ -37,11 +37,13 @@ export function normalizeToken(token: string): string {
   const bySymbol: Record<string, string> = {
     BTC: "BTC", ETH: "ETH", SOL: "SOL", USDC: "USDC",
     USDT: "USDT", JUP: "JUP", BONK: "BONK", RAY: "RAY",
+    HYPE: "HYPE",
   };
   const byName: Record<string, string> = {
     BITCOIN: "BTC", ETHEREUM: "ETH", SOLANA: "SOL",
     "USD COIN": "USDC", "US DOLLAR COIN": "USDC", TETHER: "USDT",
     JUPITER: "JUP", BONK: "BONK", RAYDIUM: "RAY",
+    HYPERLIQUID: "HYPE",
   };
   const stripped = t
     .replace(/[^A-Z0-9 ]/g, " ")

@@ -126,12 +126,12 @@ export default function StudioPage() {
     setTranscript((prev) => (prev ? prev + " " + t : t));
   }, []);
 
-  /** Voice commands drive the whole flow. */
-  const handleCommand = useCallback((cmd: VoiceCommand) => {
+  /** Voice commands drive the whole flow. `spokenSoFar` = anything just heard. */
+  const handleCommand = useCallback((cmd: VoiceCommand, spokenSoFar = "") => {
     if (busyRef.current) return;
+    const prompt = (spokenSoFar || transcript).trim();
     switch (cmd) {
       case "generate": {
-        const prompt = transcript.trim();
         if (!prompt) { toast("Nothing to plan yet — speak an alert first"); return; }
         commitUserMessage(prompt);
         setTranscript("");

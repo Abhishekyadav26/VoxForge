@@ -10,8 +10,10 @@ interface Props {
   onTranscript: (text: string) => void; // final text (appended on stop)
   onPartial?: (text: string) => void;    // live interim text
   onError?: (err: string) => void;
-  /** Fired when a standalone voice command is recognised (kept out of transcript). */
-  onCommand?: (cmd: VoiceCommand) => void;
+  /** Fired when a standalone voice command is recognised (kept out of transcript).
+   *  `spokenSoFar` is everything final spoken since the last stop, so commands
+   *  can act on the just-heard alert even before the parent state flushed. */
+  onCommand?: (cmd: VoiceCommand, spokenSoFar: string) => void;
 }
 
 type SR = {
@@ -84,9 +86,12 @@ export default function VoiceRecorder({ onTranscript, onPartial, onError, onComm
           const cmd = detectCommand(transcript);
           if (cmd) {
             // Command: fire it, do not pollute the agent transcript.
-            onCommand?.(cmd);
+            onCommand?.(cmd, finalRef.current.trim());
           } else {
             finalRef.current += transcript + " ";
+            // Emit the hearing immediately so the parent can render/reply
+            // without waiting for the user to press Stop.
+            onTranscript?.(transcript);
           }
         } else {
           interim += r[0].transcript;
@@ -106,12 +111,12 @@ export default function VoiceRecorder({ onTranscript, onPartial, onError, onComm
     if (listening) {
       rec.stop();
       const finalText = finalRef.current.trim();
-      if (finalText) { onTranscript(finalText); toast.success("Transcript added"); }
+      if (finalText) { /* finals already streamed live via onTranscript */ }
       finalRef.current = ""; setLiveText("");
     } else {
       rec.start(); setListening(true);
     }
-  }, [listening, onTranscript]);
+  }, [listening]);
 
   if (supported === null) {
     // Initial render (server + first client pass) — must be identical on both.
