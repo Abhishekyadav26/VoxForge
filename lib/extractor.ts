@@ -28,6 +28,41 @@ function tokenFrom(text: string): string {
 }
 
 /**
+ * Map full coin names / spelling variants to CMC symbols, and reject
+ * placeholder garbage the LLM sometimes invents ("MISSING_TOKEN").
+ * Unknown → "SOL" so a price step always has a working symbol.
+ */
+export function normalizeToken(token: string): string {
+  const t = (token ?? "").trim().toUpperCase();
+  const bySymbol: Record<string, string> = {
+    BTC: "BTC", ETH: "ETH", SOL: "SOL", USDC: "USDC",
+    USDT: "USDT", JUP: "JUP", BONK: "BONK", RAY: "RAY",
+  };
+  const byName: Record<string, string> = {
+    BITCOIN: "BTC", ETHEREUM: "ETH", SOLANA: "SOL",
+    "USD COIN": "USDC", "US DOLLAR COIN": "USDC", TETHER: "USDT",
+    JUPITER: "JUP", BONK: "BONK", RAYDIUM: "RAY",
+  };
+  const stripped = t
+    .replace(/[^A-Z0-9 ]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return bySymbol[stripped] ?? byName[stripped] ?? "SOL";
+}
+
+/** Normalize the token in every price.get step of a parsed spec (post-LLM). */
+export function normalizeSpecTokens(spec: AgentSpec): AgentSpec {
+  return {
+    ...spec,
+    steps: spec.steps.map((s) =>
+      s.block === "price.get"
+        ? { ...s, params: { ...s.params, token: normalizeToken(s.params.token) } }
+        : s
+    ),
+  };
+}
+
+/**
  * Market-wide intent detection: "fear and greed", "BTC dominance",
  * "total market cap" — backed by the market.fearGreed / market.globalMetrics
  * blocks. Returns the matched kind or null.
@@ -216,7 +251,7 @@ async function extractSpecWithGroq(transcript: string): Promise<AgentSpec> {
       ],
       { json: true, maxTokens: 1500 }
     );
-    return AgentSpecSchema.parse(JSON.parse(text));
+    return normalizeSpecTokens(AgentSpecSchema.parse(JSON.parse(text)));
   };
 
   try {

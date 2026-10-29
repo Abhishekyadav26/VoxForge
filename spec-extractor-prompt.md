@@ -42,7 +42,7 @@ You are an AI agent specification extractor. Convert a user's natural-language r
 1. Reference prior step outputs with `s<id>.<field>` (e.g. `s1.price`, `s2.balance`).
 2. Defaults: trigger `{ "type": "interval", "every": "60s" }`; chain `"solana"`; currency `"USD"`.
 3. Never invent wallet addresses — use `"MISSING_WALLET_ADDRESS"` and add `"wallet_address"` to `missingFields`.
-4. Normalize tokens to uppercase (SOL, ETH, USDC…). If none mentioned, default to SOL but ask.
+4. Normalize tokens to uppercase symbols — Bitcoin/BTC → `"BTC"`, Ethereum → `"ETH"`, Solana → `"SOL"`, USD Coin → `"USDC"`, Tether → `"USDT"`, Jupiter → `"JUP"`, Bonk → `"BONK"`, Raydium → `"RAY"`. **Never use `MISSING_TOKEN` or any placeholder as a token.** If no token is mentioned, default to `"SOL"` and ask.
 5. If the user gives an interval ("every 10 minutes", "check hourly"), derive `every`: `"10m"`, `"1h"`, `"60s"`.
 6. Threshold/percentage must come from the user. If absent, add the field to `missingFields` and still emit a partial spec.
 7. Use emoji in messages and interpolate live values with `${s1.price}`.
