@@ -11,6 +11,8 @@ export interface AgentRecord {
   createdAt: string;
   lastRun?: string;
   lastTriggered?: boolean;
+  /** Owner (GitHub user id from the NextAuth JWT). Public/legacy rows may omit it. */
+  userId?: string;
 }
 export interface RunRecord {
   id: string;
@@ -19,6 +21,8 @@ export interface RunRecord {
   triggered: boolean;
   trace: unknown[];
   messages: string[];
+  /** Owner (GitHub user id). */
+  userId?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -28,13 +32,13 @@ export interface RunRecord {
 // ---------------------------------------------------------------------------
 
 interface Storage {
-  listAgents(): Promise<AgentRecord[]>;
-  getAgent(id: string): Promise<AgentRecord | undefined>;
-  saveAgent(spec: AgentSpec): Promise<AgentRecord>;
-  deleteAgent(id: string): Promise<void>;
-  markAgentRun(id: string, triggered: boolean): Promise<void>;
-  listRuns(agentId?: string): Promise<RunRecord[]>;
-  saveRun(run: Omit<RunRecord, "id" | "executedAt">): Promise<RunRecord>;
+  listAgents(userId?: string): Promise<AgentRecord[]>;
+  getAgent(id: string, userId?: string): Promise<AgentRecord | undefined>;
+  saveAgent(spec: AgentSpec, userId?: string): Promise<AgentRecord>;
+  deleteAgent(id: string, userId?: string): Promise<void>;
+  markAgentRun(id: string, triggered: boolean, userId?: string): Promise<void>;
+  listRuns(agentId?: string, userId?: string): Promise<RunRecord[]>;
+  saveRun(run: Omit<RunRecord, "id" | "executedAt">, userId?: string): Promise<RunRecord>;
 }
 
 // ---------- Supabase backend ----------
@@ -55,30 +59,32 @@ function supabaseAgentRow(row: any): AgentRecord | undefined {
     createdAt: row.created_at ?? new Date().toISOString(),
     lastRun: row.last_run ?? undefined,
     lastTriggered: row.last_triggered ?? undefined,
+    userId: row.user_id ?? undefined,
   };
 }
 
 const supabaseStorage: Storage = {
-  async listAgents() {
+  async listAgents(userId) {
     const sb = getSupabase();
     if (!sb) throw new Error("Supabase not configured");
-    const { data, error } = await sb
-      .from("agents")
-      .select("*")
-      .order("created_at", { ascending: false });
+    let q = sb.from("agents").select("*").order("created_at", { ascending: false });
+    if (userId) q = q.eq("user_id", userId);
+    const { data, error } = await q;
     if (error) throw new Error(`Supabase listAgents failed: ${error.message}`);
     return (data ?? [])
       .map(supabaseAgentRow)
       .filter((r): r is AgentRecord => r !== undefined);
   },
-  async getAgent(id) {
+  async getAgent(id, userId) {
     const sb = getSupabase();
     if (!sb) throw new Error("Supabase not configured");
-    const { data, error } = await sb.from("agents").select("*").eq("id", id).maybeSingle();
+    let q = sb.from("agents").select("*").eq("id", id);
+    if (userId) q = q.eq("user_id", userId);
+    const { data, error } = await q.maybeSingle();
     if (error) throw new Error(`Supabase getAgent failed: ${error.message}`);
     return data ? supabaseAgentRow(data) : undefined;
   },
-  async saveAgent(spec) {
+  async saveAgent(spec, userId) {
     const sb = getSupabase();
     if (!sb) throw new Error("Supabase not configured");
     const rec: AgentRecord = {
@@ -86,36 +92,43 @@ const supabaseStorage: Storage = {
       name: spec.name,
       spec,
       createdAt: new Date().toISOString(),
+      userId,
     };
     const { error } = await sb.from("agents").insert({
       id: rec.id,
       name: rec.name,
       spec: rec.spec,
       created_at: rec.createdAt,
+      user_id: userId ?? null,
     });
     if (error) throw new Error(`Supabase saveAgent failed: ${error.message}`);
     return rec;
   },
-  async deleteAgent(id) {
+  async deleteAgent(id, userId) {
     const sb = getSupabase();
     if (!sb) throw new Error("Supabase not configured");
-    const { error } = await sb.from("agents").delete().eq("id", id);
+    let q = sb.from("agents").delete().eq("id", id);
+    if (userId) q = q.eq("user_id", userId);
+    const { error } = await q;
     if (error) throw new Error(`Supabase deleteAgent failed: ${error.message}`);
   },
-  async markAgentRun(id, triggered) {
+  async markAgentRun(id, triggered, userId) {
     const sb = getSupabase();
     if (!sb) throw new Error("Supabase not configured");
-    const { error } = await sb
+    let q = sb
       .from("agents")
       .update({ last_run: new Date().toISOString(), last_triggered: triggered })
       .eq("id", id);
+    if (userId) q = q.eq("user_id", userId);
+    const { error } = await q;
     if (error) throw new Error(`Supabase markAgentRun failed: ${error.message}`);
   },
-  async listRuns(agentId) {
+  async listRuns(agentId, userId) {
     const sb = getSupabase();
     if (!sb) throw new Error("Supabase not configured");
     let q = sb.from("runs").select("*").order("executed_at", { ascending: false });
     if (agentId) q = q.eq("agent_id", agentId);
+    if (userId) q = q.eq("user_id", userId);
     const { data, error } = await q;
     if (error) throw new Error(`Supabase listRuns failed: ${error.message}`);
     return (data ?? []).map((row: any): RunRecord => ({
@@ -125,15 +138,17 @@ const supabaseStorage: Storage = {
       triggered: row.triggered ?? false,
       trace: row.trace ?? [],
       messages: row.messages ?? [],
+      userId: row.user_id ?? undefined,
     }));
   },
-  async saveRun(run) {
+  async saveRun(run, userId) {
     const sb = getSupabase();
     if (!sb) throw new Error("Supabase not configured");
     const rec: RunRecord = {
       ...run,
       id: `run_${Date.now().toString(36)}`,
       executedAt: new Date().toISOString(),
+      userId,
     };
     const { error } = await sb.from("runs").insert({
       id: rec.id,
@@ -142,6 +157,7 @@ const supabaseStorage: Storage = {
       triggered: rec.triggered,
       trace: rec.trace,
       messages: rec.messages,
+      user_id: userId ?? null,
     });
     if (error) throw new Error(`Supabase saveRun failed: ${error.message}`);
     // Keep runs capped at 200.
@@ -200,50 +216,58 @@ async function writeJson(file: string, data: unknown): Promise<void> {
   await fs.writeFile(file, JSON.stringify(data, null, 2));
 }
 
+function ownedBy(rec: { userId?: string }, userId?: string): boolean {
+  return !userId || rec.userId === userId;
+}
+
 const fileStorage: Storage = {
-  async listAgents() {
-    return readJson<AgentRecord[]>(await agentsFile(), []);
+  async listAgents(userId) {
+    return (await readJson<AgentRecord[]>(await agentsFile(), [])).filter((a) =>
+      ownedBy(a, userId)
+    );
   },
-  async getAgent(id) {
-    return (await this.listAgents()).find((a) => a.id === id);
+  async getAgent(id, userId) {
+    return (await this.listAgents(userId)).find((a) => a.id === id);
   },
-  async saveAgent(spec) {
+  async saveAgent(spec, userId) {
     const agents = await this.listAgents();
     const rec: AgentRecord = {
       id: `agent_${Date.now().toString(36)}`,
       name: spec.name,
       spec,
       createdAt: new Date().toISOString(),
+      userId,
     };
     agents.unshift(rec);
     await writeJson(await agentsFile(), agents);
     return rec;
   },
-  async deleteAgent(id) {
+  async deleteAgent(id, userId) {
     await writeJson(
       await agentsFile(),
-      (await this.listAgents()).filter((a) => a.id !== id)
+      (await this.listAgents(userId)).filter((a) => a.id !== id)
     );
   },
-  async markAgentRun(id, triggered) {
+  async markAgentRun(id, triggered, userId) {
     const agents = await this.listAgents();
-    const a = agents.find((x) => x.id === id);
+    const a = agents.find((x) => x.id === id && ownedBy(x, userId));
     if (a) {
       a.lastRun = new Date().toISOString();
       a.lastTriggered = triggered;
       await writeJson(await agentsFile(), agents);
     }
   },
-  async listRuns(agentId) {
+  async listRuns(agentId, userId) {
     const runs = await readJson<RunRecord[]>(await runsFile(), []);
-    return agentId ? runs.filter((r) => r.agentId === agentId) : runs;
+    return runs.filter((r) => (!agentId || r.agentId === agentId) && ownedBy(r, userId));
   },
-  async saveRun(run) {
+  async saveRun(run, userId) {
     const runs = await readJson<RunRecord[]>(await runsFile(), []);
     const rec: RunRecord = {
       ...run,
       id: `run_${Date.now().toString(36)}`,
       executedAt: new Date().toISOString(),
+      userId,
     };
     runs.unshift(rec);
     await writeJson(await runsFile(), runs.slice(0, 200));
@@ -272,26 +296,40 @@ export function usingSupabase(): boolean {
   return !!process.env.SUPABASE_URL && !!process.env.SUPABASE_SERVICE_ROLE_KEY;
 }
 
-export async function listAgents(): Promise<AgentRecord[]> {
-  return getStorage().listAgents();
+export async function listAgents(userId?: string): Promise<AgentRecord[]> {
+  return getStorage().listAgents(userId);
 }
-export async function getAgent(id: string): Promise<AgentRecord | undefined> {
-  return getStorage().getAgent(id);
+export async function getAgent(
+  id: string,
+  userId?: string
+): Promise<AgentRecord | undefined> {
+  return getStorage().getAgent(id, userId);
 }
-export async function saveAgent(spec: AgentSpec): Promise<AgentRecord> {
-  return getStorage().saveAgent(spec);
+export async function saveAgent(
+  spec: AgentSpec,
+  userId?: string
+): Promise<AgentRecord> {
+  return getStorage().saveAgent(spec, userId);
 }
-export async function deleteAgent(id: string): Promise<void> {
-  return getStorage().deleteAgent(id);
+export async function deleteAgent(id: string, userId?: string): Promise<void> {
+  return getStorage().deleteAgent(id, userId);
 }
-export async function markAgentRun(id: string, triggered: boolean): Promise<void> {
-  return getStorage().markAgentRun(id, triggered);
+export async function markAgentRun(
+  id: string,
+  triggered: boolean,
+  userId?: string
+): Promise<void> {
+  return getStorage().markAgentRun(id, triggered, userId);
 }
-export async function listRuns(agentId?: string): Promise<RunRecord[]> {
-  return getStorage().listRuns(agentId);
+export async function listRuns(
+  agentId?: string,
+  userId?: string
+): Promise<RunRecord[]> {
+  return getStorage().listRuns(agentId, userId);
 }
 export async function saveRun(
-  run: Omit<RunRecord, "id" | "executedAt">
+  run: Omit<RunRecord, "id" | "executedAt">,
+  userId?: string
 ): Promise<RunRecord> {
-  return getStorage().saveRun(run);
+  return getStorage().saveRun(run, userId);
 }

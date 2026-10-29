@@ -3,6 +3,8 @@ import { ViewTransitions } from "next-view-transitions";
 import { Link } from "next-view-transitions";
 import { Mic } from "@/components/icons";
 import Toaster from "@/components/ui/toaster";
+import SessionProvider from "@/components/SessionProvider";
+import AuthButton from "@/components/AuthButton";
 
 export const metadata = {
   title: "Voice-to-Agent Studio",
@@ -14,6 +16,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <ViewTransitions>
       <html lang="en">
         <body className="min-h-screen bg-slate-950 text-slate-100">
+          <SessionProvider>
           {/* Floating nav: overlays the full-screen hero on the home page,
               and stays pinned while scrolling content pages. Each page owns
               its own width container; pages that start under the header use
@@ -24,7 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <Mic size={16} className="text-slate-400" />
                 Voice-to-Agent Studio
               </Link>
-              <nav className="pointer-events-auto flex gap-4 text-sm text-slate-300">
+              <nav className="pointer-events-auto flex items-center gap-4 text-sm text-slate-300">
                 <Link href="/studio" className="hover:text-white">
                   Studio
                 </Link>
@@ -34,11 +37,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <Link href="/demo" className="hover:text-white">
                   Demo
                 </Link>
+                <AuthButton />
               </nav>
             </div>
           </header>
           {children}
           <Toaster />
+          </SessionProvider>
         </body>
       </html>
     </ViewTransitions>

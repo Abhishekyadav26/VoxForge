@@ -1,10 +1,15 @@
 import { listAgents } from "@/lib/db";
 import { Link } from "next-view-transitions";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
 export default async function AgentsPage() {
-  const agents = await listAgents();
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) redirect("/login");
+  const agents = await listAgents(session.user.id);
   return (
     <main className="mx-auto max-w-5xl space-y-4 px-4 pt-20">
       <h1 className="text-2xl font-bold">

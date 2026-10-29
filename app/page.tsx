@@ -7,6 +7,8 @@ import { TokenStatCard } from "@/components/TokenStatCard";
 import HomeHero from "@/components/HomeHero";
 import HomeFeatures from "@/components/HomeFeatures";
 import { Button } from "@/components/ui/button";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +26,11 @@ async function getHeadlinePrices() {
 }
 
 export default async function Home() {
-  const [prices, agents] = await Promise.all([getHeadlinePrices(), listAgents()]);
+  const session = await getServerSession(authOptions);
+  const [prices, agents] = await Promise.all([
+    getHeadlinePrices(),
+    listAgents(session?.user?.id),
+  ]);
 
   return (
     <>
