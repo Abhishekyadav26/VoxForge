@@ -111,6 +111,47 @@ async function main() {
   assert.strictEqual(r9.triggered, true);
   console.log("✔ interpreter percent-change fallback:", r9.trace.find((t) => t.block === "condition.percentChange")?.detail);
 
+  // 10. Token normalization: BNB must not silently become SOL (regression)
+  const t10 = extractSpecLocal("alert me when BNB drops below $600");
+  const p10 = t10.steps.find((s) => s.block === "price.get")!;
+  assert.strictEqual((p10.params as any).token, "BNB");
+  assert.strictEqual(extractSpecLocal("warn me on binance coin").steps[0].params.token, "BNB");
+  console.log("✔ extractor: 'BNB' and 'binance coin' resolve to BNB (not SOL)");
+
+  // 11. Volume rule → condition on s1.volume24h
+  const t11 = extractSpecLocal("alert me when SOL's 24h volume exceeds $1B");
+  const v11 = t11.steps.find((s) => s.block === "condition.compare")!;
+  assert.strictEqual((v11.params as any).left, "s1.volume24h");
+  assert.strictEqual((v11.params as any).op, ">");
+  assert.strictEqual((v11.params as any).right, 1e9);
+  console.log("✔ extractor: volume rule →", JSON.stringify(v11.params));
+
+  // 12. Narrative monitor + threshold
+  const t12 = extractSpecLocal("alert me when the AI narrative grows more than 10%");
+  assert(t12.steps.some((s) => s.block === "market.narrative"));
+  const c12 = t12.steps.find((s) => s.block === "condition.compare")!;
+  assert.strictEqual((c12.params as any).left, "s1.topChange");
+  console.log("✔ extractor: narrative →", JSON.stringify(c12.params));
+
+  // 13. Historical comparison ("price from 24 hours ago" / "yesterday")
+  const t13 = extractSpecLocal("alert me when SOL returns to its price from 24 hours ago");
+  const h13 = t13.steps.find((s) => s.block === "price.historical")!;
+  assert.strictEqual((h13.params as any).hoursAgo, 24);
+  assert(!t13.missingFields?.includes("threshold"), "historical monitor needs no price threshold");
+  const t13b = extractSpecLocal("alert me when BTC is at the same price as yesterday");
+  assert.strictEqual((t13b.steps.find((s) => s.block === "price.historical")!.params as any).hoursAgo, 24);
+  console.log("✔ extractor: historical → hoursAgo 24 (no spurious missing threshold)");
+
+  // 14. New block names are accepted by the schema
+  for (const block of ["market.coinInfo", "market.narrative", "price.historical"]) {
+    AgentSpecSchema.parse({
+      name: "schema", trigger: { type: "interval", every: "60s" },
+      steps: [{ id: "s1", block, params: { token: "SOL" } }],
+      actions: [{ block: "notify.telegram", params: { message: "m" } }],
+    });
+  }
+  console.log("✔ schema accepts market.coinInfo, market.narrative, price.historical");
+
   console.log("\n✅ All engine tests passed");
 }
 
