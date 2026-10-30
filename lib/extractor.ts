@@ -22,34 +22,55 @@ function intervalFor(text: string): string {
   return "60s";
 }
 
+/** Known tickers and full names. Anything else falls through to the raw ticker. */
+const KNOWN_SYMBOLS: Record<string, string> = {
+  BTC: "BTC", ETH: "ETH", SOL: "SOL", USDC: "USDC", USDT: "USDT",
+  JUP: "JUP", BONK: "BONK", RAY: "RAY", HYPE: "HYPE", BNB: "BNB",
+  XRP: "XRP", ADA: "ADA", DOGE: "DOGE", AVAX: "AVAX", DOT: "DOT",
+  LINK: "LINK", MATIC: "MATIC", TRX: "TRX", LTC: "LTC", TON: "TON",
+};
+const KNOWN_NAMES: Record<string, string> = {
+  BITCOIN: "BTC", ETHEREUM: "ETH", SOLANA: "SOL", BINANCE: "BNB",
+  "BINANCE COIN": "BNB", "BNB CHAIN": "BNB", RIPPLE: "XRP", CARDANO: "ADA",
+  DOGECOIN: "DOGE", AVALANCHE: "AVAX", POLKADOT: "DOT", CHAINLINK: "LINK",
+  POLYGON: "MATIC", TRON: "TRX", LITECOIN: "LTC", TONCOIN: "TON",
+  "USD COIN": "USDC", TETHER: "USDT", JUPITER: "JUP", RAYDIUM: "RAY",
+  HYPERLIQUID: "HYPE",
+};
+
+/**
+ * Find the token in free text. Prefers a known ticker or name; otherwise takes
+ * the first standalone uppercase word (e.g. "XYZ") so an unlisted coin is
+ * monitored by its own symbol instead of silently becoming SOL.
+ */
 function tokenFrom(text: string): string {
-  const m = text.toUpperCase().match(/\b(SOL|ETH|BTC|USDC|JUP|BONK|RAY)\b/);
-  return m ? m[1] : "SOL";
+  const upper = text.toUpperCase();
+  for (const [name, sym] of Object.entries(KNOWN_NAMES)) {
+    if (new RegExp(`\\b${name}\\b`).test(upper)) return sym;
+  }
+  const known = upper.match(/\b([A-Z]{2,6})\b/g) ?? [];
+  for (const w of known) if (KNOWN_SYMBOLS[w]) return KNOWN_SYMBOLS[w];
+  const raw = text.match(/\b[A-Z]{2,6}\b/);
+  return raw ? raw[0] : "SOL";
 }
 
 /**
  * Map full coin names / spelling variants to CMC symbols, and reject
  * placeholder garbage the LLM sometimes invents ("MISSING_TOKEN").
- * Unknown → "SOL" so a price step always has a working symbol.
+ * A valid unlisted ticker is kept as-is; only unusable input becomes "SOL".
  */
 export function normalizeToken(token: string): string {
   const t = (token ?? "").trim().toUpperCase();
-  const bySymbol: Record<string, string> = {
-    BTC: "BTC", ETH: "ETH", SOL: "SOL", USDC: "USDC",
-    USDT: "USDT", JUP: "JUP", BONK: "BONK", RAY: "RAY",
-    HYPE: "HYPE",
-  };
-  const byName: Record<string, string> = {
-    BITCOIN: "BTC", ETHEREUM: "ETH", SOLANA: "SOL",
-    "USD COIN": "USDC", "US DOLLAR COIN": "USDC", TETHER: "USDT",
-    JUPITER: "JUP", BONK: "BONK", RAYDIUM: "RAY",
-    HYPERLIQUID: "HYPE",
-  };
   const stripped = t
     .replace(/[^A-Z0-9 ]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
-  return bySymbol[stripped] ?? byName[stripped] ?? "SOL";
+  if (KNOWN_SYMBOLS[stripped]) return KNOWN_SYMBOLS[stripped];
+  if (KNOWN_NAMES[stripped]) return KNOWN_NAMES[stripped];
+  // Unknown but a valid ticker shape: keep it so CoinMarketCap prices the coin
+  // the user named. Only fall back to SOL when there is nothing usable.
+  if (/^[A-Z]{2,6}$/.test(stripped)) return stripped;
+  return "SOL";
 }
 
 /** Normalize the token in every price.get step of a parsed spec (post-LLM). */
