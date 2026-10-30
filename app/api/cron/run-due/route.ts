@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { runDueAgents } from "@/lib/scheduler";
 
-/**
- * Scheduler tick: runs every interval-based agent that is due.
- * Protected by CRON_SECRET (Authorization: Bearer <secret>), so only the
- * scheduler can call it. Called once a minute by scripts/scheduler.ts.
- */
-export async function POST(req: Request) {
+// Vercel cron calls this route with GET; the local scheduler uses POST.
+// Both share one handler so the auth and behaviour stay identical.
+// Running several agents sequentially can exceed the default 10s limit.
+export const maxDuration = 60;
+export const dynamic = "force-dynamic";
+
+async function handle(req: Request) {
   const secret = process.env.CRON_SECRET;
   if (!secret) {
     return NextResponse.json({ success: false, error: "CRON_SECRET not set" }, { status: 503 });
@@ -21,3 +22,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: false, error: e?.message ?? String(e) }, { status: 500 });
   }
 }
+
+export const GET = handle;
+export const POST = handle;
