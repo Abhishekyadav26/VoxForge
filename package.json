@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "test:engine": "npx tsx scripts/test-engine.ts"
+    "test:engine": "npx tsx scripts/test-engine.ts",
+    "scheduler": "tsx scripts/scheduler.ts"
   },
   "dependencies": {
     "@coinmarketcap/sdk": "^5.0.0",
