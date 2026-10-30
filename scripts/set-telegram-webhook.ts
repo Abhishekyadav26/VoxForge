@@ -10,6 +10,9 @@
  * `--delete` to unset the webhook when switching to a polling bot.
  */
 import { z } from "zod";
+import { existsSync } from "node:fs";
+// Load .env.local without extra deps (Node 20.12+ / 22+).
+if (existsSync(".env.local")) process.loadEnvFile(".env.local");
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 if (!token) {
