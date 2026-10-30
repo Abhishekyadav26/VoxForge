@@ -32,7 +32,7 @@ async function tick() {
     }
     if (json.ran > 0) {
       for (const o of json.data as any[]) {
-        const tag = o.ok ? (o.triggered ? "FIRED" : "ok") : "ERROR";
+        const tag = !o.ok ? "ERROR" : o.sent ? "SENT" : o.triggered ? "met (already alerted)" : "not met";
         console.log(`[${started}] ${tag} ${o.name}${o.error ? ` — ${o.error}` : ""}`);
       }
     }

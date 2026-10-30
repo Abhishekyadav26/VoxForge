@@ -289,10 +289,46 @@ async function extractSpecWithGroq(transcript: string): Promise<AgentSpec> {
  * Main entry: prefer Groq (accurate NLU), fall back to the rule-based
  * extractor so the app works offline / without an API key.
  */
+/** A coin the user named outright (ticker or full name), or null. */
+function mentionedToken(text: string): string | null {
+  const upper = text.toUpperCase();
+  for (const [name, sym] of Object.entries(KNOWN_NAMES)) {
+    if (new RegExp(`\\b${name}\\b`).test(upper)) return sym;
+  }
+  for (const w of upper.match(/\b[A-Z]{2,6}\b/g) ?? []) {
+    if (KNOWN_SYMBOLS[w]) return KNOWN_SYMBOLS[w];
+  }
+  return null;
+}
+
+/** "above $650", "drops below 100", "over $2k"… */
+const THRESHOLD_RE =
+  /\b(above|below|over|under|greater|less|drops?|falls?|rises?|goes|reaches?|hits?)\b[^\d$]{0,20}\$?\s*\d/i;
+
+/**
+ * Does the model's spec honour what the user said? It must keep the coin the
+ * user named and must include a condition when they gave a threshold.
+ * Without a condition an alert fires on every run, so that spec is rejected.
+ */
+export function specMatchesIntent(transcript: string, spec: AgentSpec): boolean {
+  const hasCondition = spec.steps.some((s) => s.block.startsWith("condition."));
+  if (THRESHOLD_RE.test(transcript) && !hasCondition) return false;
+  const want = mentionedToken(transcript);
+  if (want) {
+    const priceTokens = spec.steps
+      .filter((s) => s.block === "price.get")
+      .map((s) => String(s.params.token).toUpperCase());
+    if (priceTokens.length && !priceTokens.includes(want)) return false;
+  }
+  return true;
+}
+
 export async function extractSpec(transcript: string): Promise<AgentSpec> {
   if (process.env.GROQ_API_KEY) {
     try {
-      return await extractSpecWithGroq(transcript);
+      const spec = await extractSpecWithGroq(transcript);
+      if (specMatchesIntent(transcript, spec)) return spec;
+      console.warn("Groq spec ignored (dropped the condition or coin); using local rules.");
     } catch (e) {
       console.warn("Groq extraction failed, using local extractor:", e);
     }
