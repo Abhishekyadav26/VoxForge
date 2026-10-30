@@ -158,15 +158,13 @@ function PlanBubble({
   if (item.loading || !item.spec) return <TypingBubble label="Building your plan…" />;
 
   return (
-    <AgentCard>
-      {!revealed && (
-        <AgentWorkflow
-          phases={phases}
-          tools={VF_TOOLS}
-          workingLabel="Building your plan…"
-          onComplete={() => setRevealed(true)}
-        />
-      )}
+    <AgentCard className="border-transparent bg-transparent px-0 py-0 shadow-none">
+      <AgentWorkflow
+        phases={phases}
+        tools={VF_TOOLS}
+        workingLabel="Building your plan…"
+        onComplete={() => setRevealed(true)}
+      />
       {item.error && <p className="mt-1 text-[12.5px] text-rose-300">Error: {item.error}</p>}
       {revealed && (
         <div className="mt-2 space-y-2">
@@ -184,7 +182,7 @@ function PlanBubble({
 function TraceBubble({ item }: { item: Extract<ThreadItem, { kind: "trace" }> }) {
   if (item.loading) return <TypingBubble label="Running your monitor against live prices…" />;
   return (
-    <AgentCard>
+    <AgentCard className="border-transparent bg-transparent px-0 py-0 shadow-none">
       <AgentRunView
         transcript={item.spec.name}
         trace={item.trace}
