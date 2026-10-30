@@ -129,7 +129,7 @@ export function extractSpecLocal(transcript: string): AgentSpec {
   let sid = 1;
   const nid = () => `s${sid++}`;
 
-  const needsPrice = /\$|price|sol|eth|btc|usdc|jup|bonk|ray|rises|above|below/i.test(text);
+  const needsPrice = /\$|price|volume|sol|eth|btc|usdc|jup|bonk|ray|rises|above|below/i.test(text);
   const needsWallet = /wallet|balance|my (sol|account)/i.test(text);
   const mkt = marketIntent(text);
 
@@ -137,12 +137,43 @@ export function extractSpecLocal(transcript: string): AgentSpec {
   // precedence: their block output is the subject, not a token price.
   const needsMarket = mkt !== null && !needsWallet;
 
+  // Narrative/sector monitor: "which narrative is trending", "AI sector up 10%".
+  const needsNarrative = /\b(narrative|narratives|sector|categories|trending|hot coin)\b/i.test(text);
+  // Historical comparison: "same price as 24 hours ago", "price from yesterday".
+  const histHours = /yesterday/i.test(text)
+    ? 24
+    : (() => {
+        const m = text.match(/(\d+)\s*(hour|day)s?\s+ago/i);
+        if (!m) return null;
+        return m[2].toLowerCase() === "day" ? Number(m[1]) * 24 : Number(m[1]);
+      })();
+  const wantsVolume = /\bvolume\b/i.test(text);
+  // Volume is usually a modifier of the price monitor, not its own monitor.
+  let volumeCondition = false;
+
   let priceId: string | undefined;
   let balId: string | undefined;
 
   if (needsPrice && !needsMarket) {
     priceId = nid();
     steps.push({ id: priceId, block: "price.get", params: { token, currency: "USD" } });
+  }
+  let histId: string | undefined;
+  if (histHours !== null && !needsMarket) {
+    histId = nid();
+    steps.push({ id: histId, block: "price.historical", params: { token, hoursAgo: histHours, currency: "USD" } });
+    if (!priceId) {
+      priceId = nid();
+      steps.push({ id: priceId, block: "price.get", params: { token, currency: "USD" } });
+    }
+  }
+  if (needsNarrative) {
+    const nId = nid();
+    steps.push({ id: nId, block: "market.narrative", params: { limit: 10 } });
+    const th = thresholdOf(text);
+    if (th) {
+      steps.push({ id: nid(), block: "condition.compare", params: { left: `${nId}.topChange`, op: th.dir, right: th.n } });
+    }
   }
   if (needsWallet) {
     balId = nid();
@@ -162,6 +193,22 @@ export function extractSpecLocal(transcript: string): AgentSpec {
       steps.push({ id: nid(), block: "condition.compare", params: { left: `${mktId}.${field}`, op: th.dir, right: th.n } });
     } else {
       missingFields.push(mkt === "fearGreed" ? "fear_greed_threshold" : "market_threshold");
+    }
+  }
+
+  // Volume threshold: "when SOL's 24h volume exceeds $1B".
+  if (wantsVolume && priceId && !needsMarket && !needsNarrative) {
+    const v = text.match(/\$\s*(\d+(?:\.\d+)?)\s*([kmb])?/i) ?? text.match(/(\d+(?:\.\d+)?)\s*([kmb])\b/i);
+    if (v) {
+      const mult = { k: 1e3, m: 1e6, b: 1e9 }[(v[2] ?? "").toLowerCase() as "k" | "m" | "b"] ?? 1;
+      const dir = /below|under|less|drops?|falls?/i.test(text) ? "<" : ">";
+      steps.push({
+        id: nid(), block: "condition.compare",
+        params: { left: `${priceId}.volume24h`, op: dir, right: parseFloat(v[1]) * mult },
+      });
+      volumeCondition = true;
+    } else {
+      missingFields.push("volume_threshold");
     }
   }
 
@@ -204,13 +251,13 @@ export function extractSpecLocal(transcript: string): AgentSpec {
   // Skipped for market-wide monitors (their threshold is already a compare).
   const hasDir = /below|under|above|over|exceeds?|drops?\s+(?:below|to)|falls?\s+(?:below|to)|rises?\s+(?:above|to)/i.test(text);
   const hasDollar = /\$/.test(text);
-  if (!needsMarket && (!pct || hasDir || hasDollar)) {
+  if (!needsMarket && !volumeCondition && (!pct || hasDir || hasDollar)) {
     const abs = text.match(/\$\s*(\d+(?:\.\d+)?)/i) ?? text.match(/(\d+(?:\.\d+)?)\s*(?!%)/);
     if (abs && (hasDir || hasDollar)) {
       const dir = /below|under|drops?|falls?|fell|</i.test(text) ? "<" : ">";
       const left = needsWallet && !needsPrice ? `${balId}.balance` : `${priceId}.price`;
       steps.push({ id: nid(), block: "condition.compare", params: { left, op: dir, right: parseFloat(abs[1]) } });
-    } else if (needsPrice && (!abs || !hasDir)) {
+    } else if (needsPrice && !histId && (!abs || !hasDir)) {
       missingFields.push("threshold");
     }
   }

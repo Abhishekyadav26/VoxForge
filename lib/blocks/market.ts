@@ -156,3 +156,100 @@ export function formatUsd(n: number): string {
   if (n >= 1e6) return `$${(n / 1e6).toFixed(1)}M`;
   return `$${n.toFixed(0)}`;
 }
+export interface CoinInfo {
+  id?: number;
+  name: string;
+  symbol: string;
+  slug?: string;
+  category?: string;
+  description?: string;
+  logo?: string;
+  website?: string;
+  tags?: string[];
+  dateAdded?: string;
+}
+
+/**
+ * Token metadata (cryptocurrency.info): description, links, tags, logo.
+ * Useful for a token browser and for enriching alert messages.
+ */
+export async function getCoinInfo(token: string): Promise<CoinInfo> {
+  const sym = token.toUpperCase();
+  const { data, error } = (await getCmc()!.api.cryptocurrency.info({
+    query: { symbol: sym },
+  })) as {
+    data?: {
+      data?: Record<
+        string,
+        Array<{
+          id?: number;
+          name?: string;
+          symbol?: string;
+          slug?: string;
+          category?: string;
+          description?: string;
+          logo?: string;
+          date_added?: string;
+          tags?: string[];
+          urls?: { website?: string[] };
+        }>
+      >;
+    };
+    error?: unknown;
+  };
+  if (error) throw new Error(`CoinMarketCap info failed for ${sym}`);
+
+  const rows = data?.data?.[sym] ?? [];
+  if (!rows.length) throw new Error(`No CoinMarketCap metadata for ${sym}`);
+  const r = rows[0];
+  return {
+    id: r.id,
+    name: r.name ?? sym,
+    symbol: r.symbol ?? sym,
+    slug: r.slug,
+    category: r.category,
+    description: r.description,
+    logo: r.logo,
+    website: r.urls?.website?.[0],
+    tags: r.tags?.slice(0, 8),
+    dateAdded: r.date_added,
+  };
+}
+
+export interface Narrative {
+  name: string;
+  marketCap?: number;
+  volume24h?: number;
+  percentChange24h?: number;
+  numTokens?: number;
+}
+
+/**
+ * Hot narratives / sectors (cryptocurrency.categories), e.g. "Layer 2",
+ * "Real World Assets", "AI Agents" — each with market cap and 24h change.
+ */
+export async function getCategories(limit = 10): Promise<Narrative[]> {
+  const { data, error } = (await getCmc()!.api.cryptocurrency.categories({
+    query: { limit },
+  })) as {
+    data?: {
+      data?: Array<{
+        name?: string;
+        title?: string;
+        market_cap?: number;
+        volume?: number;
+        avg_price_change?: number;
+        num_tokens?: number;
+      }>;
+    };
+    error?: unknown;
+  };
+  if (error) throw new Error("CoinMarketCap categories failed");
+  return (data?.data ?? []).map((c) => ({
+    name: c.title ?? c.name ?? "unknown",
+    marketCap: c.market_cap,
+    volume24h: c.volume,
+    percentChange24h: c.avg_price_change,
+    numTokens: c.num_tokens,
+  }));
+}

@@ -20,7 +20,11 @@ You are an AI agent specification extractor. Convert a user's natural-language r
 
 ## Blocks
 
-- `price.get` `{ "token": "SOL|ETH|USDC", "currency": "USD|EUR|INR" }` → `{ price, timestamp, percentChange1h, percentChange24h, percentChange7d }`
+- `price.get` `{ "token": "SOL|ETH|USDC", "currency": "USD|EUR|INR" }` → `{ price, timestamp, id, name, volume24h, marketCap, tvl, percentChange1h, percentChange24h, percentChange7d }`
+  Use `s1.volume24h` in a compare for volume rules ("24h volume above $1B").
+- `price.historical` `{ "token": "SOL", "hoursAgo": 24 }` → `{ price, timestamp, hoursAgo }` — price N hours ago ("same price as yesterday").
+- `market.coinInfo` `{ "token": "SOL" }` → `{ name, symbol, category, description, website, tags }` — token metadata.
+- `market.narrative` `{ "limit": 10 }` → `{ narratives, top, topChange }` — trending sectors/narratives ("AI narrative", "which sector is trending").
 - `wallet.getBalance` `{ "chain": "solana", "address": "<address>" }` → `{ balance, formatted }`
 - `market.fearGreed` `{}` → `{ value, classification, timestamp }` (0-100 index; classification is Extreme Fear/Fear/Neutral/Greed/Extreme Greed)
 - `market.globalMetrics` `{ "currency": "USD" }` → `{ totalMarketCap, totalVolume24h, btcDominance, ethDominance, activeCryptocurrencies, timestamp }`

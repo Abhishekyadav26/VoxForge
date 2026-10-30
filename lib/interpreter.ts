@@ -1,7 +1,13 @@
 import { AgentSpec } from "./spec-schema";
-import { getPrice } from "./blocks/price";
+import { getPrice, getHistoricalPrice } from "./blocks/price";
 import { getBalance } from "./blocks/wallet";
-import { getFearGreed, getGlobalMetrics, formatUsd } from "./blocks/market";
+import {
+  getFearGreed,
+  getGlobalMetrics,
+  getCoinInfo,
+  getCategories,
+  formatUsd,
+} from "./blocks/market";
 import { compare, percentChangeCheck, CompareOp } from "./blocks/condition";
 import { renderMessage, sendTelegram, formatNum } from "./blocks/notify";
 
@@ -104,6 +110,40 @@ export async function runSpec(
           trace.push({
             stepId: step.id, block: step.block,
             detail: `Total market cap ${formatUsd(r.totalMarketCap)} · BTC dom ${r.btcDominance.toFixed(1)}% · ETH dom ${r.ethDominance.toFixed(1)}%`,
+            output: outputs[step.id],
+          });
+          break;
+        }
+        case "price.historical": {
+          const hours = Number(p.hoursAgo ?? 24);
+          const r = await getHistoricalPrice(String(p.token ?? "SOL"), hours, String(p.currency ?? "USD"));
+          outputs[step.id] = r as unknown as Record<string, unknown>;
+          trace.push({
+            stepId: step.id, block: step.block,
+            detail: `${p.token} ${hours}h ago = $${formatNum(r.price)}`,
+            output: outputs[step.id],
+          });
+          break;
+        }
+        case "market.coinInfo": {
+          const r = await getCoinInfo(String(p.token ?? "SOL"));
+          outputs[step.id] = r as unknown as Record<string, unknown>;
+          trace.push({
+            stepId: step.id, block: step.block,
+            detail: `${r.name} (${r.symbol}) · ${r.category ?? "coin"} · ${(r.tags ?? []).slice(0, 3).join(", ") || "no tags"}`,
+            output: outputs[step.id],
+          });
+          break;
+        }
+        case "market.narrative": {
+          const rows = await getCategories(Number(p.limit ?? 10));
+          const top = rows[0];
+          outputs[step.id] = { narratives: rows, top: top?.name, topChange: top?.percentChange24h } as Record<string, unknown>;
+          trace.push({
+            stepId: step.id, block: step.block,
+            detail: top
+              ? `${top.name} leads ${rows.length} narratives · ${formatUsd(top.marketCap ?? 0)} · ${(top.percentChange24h ?? 0).toFixed(2)}% 24h`
+              : "No narrative data returned",
             output: outputs[step.id],
           });
           break;
