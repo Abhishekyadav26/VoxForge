@@ -111,8 +111,8 @@ export default function StudioPage() {
       });
       const json = await res.json();
       if (!json.success) throw new Error(json.error);
-      patch(id, { agentId: json.data.id });
-      toast.success("Agent deployed");
+      patch(id, { agentId: json.data.id, run: json.data.run });
+      toast.success(json.data.run?.triggered ? "Agent deployed — first run triggered" : "Agent deployed");
     } catch (e: any) {
       patch(id, { error: e.message });
       toast.error(e.message);
@@ -204,6 +204,14 @@ export default function StudioPage() {
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col px-4 pb-40 pt-16">
+      <style>{`
+        @media (hover: hover) {
+          .studio-command-chip:hover {
+            border-color: slate-500;
+            color: slate-100;
+          }
+        }
+      `}</style>
       <header className="mb-4 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-white">VoxForge Studio</h1>
@@ -232,7 +240,7 @@ export default function StudioPage() {
                 key={cmd}
                 onClick={() => handleCommand(cmd)}
                 disabled={busy}
-                className="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-xs text-slate-300 transition-colors hover:border-slate-500 hover:text-slate-100 disabled:opacity-40"
+                className="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-xs text-slate-300 transition-[color,background-color,border-color,transform] duration-150 ease-out enabled:active:scale-[0.96] hover:border-slate-500 hover:text-slate-100 disabled:opacity-40 motion-safe:hover:border-slate-500"
               >
                 🎙️ “{hint}”
               </button>

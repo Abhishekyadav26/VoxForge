@@ -43,7 +43,15 @@ export type ThreadItem =
       error?: string;
       loading: boolean;
     }
-  | { id: number; role: "agent"; kind: "deploy"; agentId?: string; error?: string };
+  | {
+      id: number;
+      role: "agent";
+      kind: "deploy";
+      agentId?: string;
+      /** Result of the automated first run after deploy. */
+      run?: { ok?: boolean; triggered?: boolean; sent?: boolean; error?: string };
+      error?: string;
+    };
 
 /* ──────────────────────────────── bubbles ──────────────────────────────── */
 
@@ -217,6 +225,17 @@ function DeployBubble({ item }: { item: Extract<ThreadItem, { kind: "deploy" }> 
               )}
             </p>
           </AgentCard>
+          {item.run && (
+            <AgentCard className="border-slate-700/70">
+              <p className={"text-[13px] " + (item.run.ok === false ? "text-rose-200" : item.run.triggered ? "text-emerald-200" : "text-slate-300")}>
+                {item.run.ok === false
+                  ? "First run failed — " + (item.run.error ?? "unknown error")
+                  : item.run.triggered
+                    ? "First run: condition met — alert sent" + (item.run.sent ? " to Telegram" : "")
+                    : "First run: conditions not met — no alert"}
+              </p>
+            </AgentCard>
+          )}
         </>
       ) : (
         <TypingBubble label="Deploying your agent…" />
