@@ -1,5 +1,5 @@
 "use client";
-import ReactFlow, { Background, Controls, MarkerType, type Node, type Edge } from "reactflow";
+import ReactFlow, { Background, Controls, Handle, MarkerType, Position, type Node, type Edge } from "reactflow";
 import "reactflow/dist/style.css";
 import { useMemo } from "react";
 import { BorderBeam } from "@/components/ui/border-beam";
@@ -11,9 +11,24 @@ const KIND_STYLE: Record<string, { bg: string; fg: string }> = {
   action: { bg: "#c9c9c9", fg: "#0b0b0b" },
 };
 
+const HANDLE: React.CSSProperties = {
+  width: 6,
+  height: 6,
+  background: "#71717a",
+  border: "none",
+};
+
 function SpecNode({ data }: { data: { label: string; kind: string } }) {
   const s = KIND_STYLE[data.kind] ?? KIND_STYLE.step;
-  return (<div style={{ background: s.bg, color: s.fg, border: "1px solid rgba(0,0,0,.3)", borderRadius: 8, padding: "8px 12px", fontSize: 13, fontWeight: 600, maxWidth: 280 }}>{data.label}</div>);
+  return (
+    <div style={{ background: s.bg, color: s.fg, border: "1px solid rgba(0,0,0,.3)", borderRadius: 8, padding: "8px 12px", fontSize: 13, fontWeight: 600, maxWidth: 280 }}>
+      <Handle type="target" position={Position.Top} id="top" style={HANDLE} />
+      <Handle type="target" position={Position.Left} id="left" style={HANDLE} />
+      {data.label}
+      <Handle type="source" position={Position.Bottom} id="bottom" style={HANDLE} />
+      <Handle type="source" position={Position.Right} id="right" style={HANDLE} />
+    </div>
+  );
 }
 const nodeTypes = { specNode: SpecNode };
 
@@ -46,17 +61,17 @@ export default function PlanGraph({ spec, onSelectStep }: Props) {
       const p = s.params as Record<string, any>;
       for (const key of ["left", "value"]) {
         const src = p[key] ? ref(p[key]) : null;
-        if (src) es.push({ id: `${src}-→-${s.id}-${key}`, source: src, target: s.id, type: "smoothstep", markerEnd: { type: MarkerType.ArrowClosed } });
+        if (src) es.push({ id: `${src}-→-${s.id}-${key}`, source: src, target: s.id, sourceHandle: "bottom", targetHandle: "top", type: "smoothstep", markerEnd: { type: MarkerType.ArrowClosed } });
       }
     });
     const conds = spec.steps.filter((s) => s.block.startsWith("condition."));
     const last = conds.length ? conds[conds.length - 1].id : spec.steps[spec.steps.length - 1].id;
-    es.push({ id: `${last}-→-action`, source: last, target: "action", type: "smoothstep", markerEnd: { type: MarkerType.ArrowClosed } });
+    es.push({ id: `${last}-→-action`, source: last, target: "action", sourceHandle: "right", targetHandle: "left", type: "smoothstep", markerEnd: { type: MarkerType.ArrowClosed } });
     return { nodes: ns, edges: es };
   }, [spec]);
 
   return (
-    <div className="relative overflow-hidden rounded-xl border border-slate-700/70 bg-slate-900/60 shadow-sm">
+    <div className="relative h-full overflow-hidden rounded-xl border border-slate-700/70 bg-slate-900/60 shadow-sm">
       <BorderBeam size={220} duration={10} colorFrom="#8d8d8d" colorTo="#3a3a3a" />
       <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} fitView onNodeClick={(_, n) => onSelectStep(n.id === "action" ? null : n.id)}>
         <Background gap={16} />
