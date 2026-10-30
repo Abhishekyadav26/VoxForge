@@ -4,6 +4,7 @@ import { Link } from "next-view-transitions";
 import { NumberTicker } from "@/components/ui/number-ticker";
 import { GlyphMatrix } from "@/components/ui/glyph-matrix";
 import { TokenStatCard } from "@/components/TokenStatCard";
+import { TiltCard } from "@/components/ui/be-ui-tilt-card";
 import HomeHero from "@/components/HomeHero";
 import HomeFeatures from "@/components/HomeFeatures";
 import { Button } from "@/components/ui/button";
@@ -48,8 +49,8 @@ export default async function Home() {
             { sym: "ETH", name: "Ethereum", price: prices.ETH },
             { sym: "BTC", name: "Bitcoin", price: prices.BTC },
           ]).map((t) => (
+            <TiltCard key={t.sym} className="w-full">
             <TokenStatCard
-              key={t.sym}
               ticker={t.sym}
               name={t.name}
               currentPrice={t.price}
@@ -62,6 +63,7 @@ export default async function Home() {
                 </span>
               </span>
             </TokenStatCard>
+            </TiltCard>
           ))}
         </section>
 
