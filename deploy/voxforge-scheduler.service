@@ -1,0 +1,19 @@
+# Optional systemd USER service for the scheduler. Not installed automatically.
+# Install (only if you want it):
+#   mkdir -p ~/.config/systemd/user
+#   cp deploy/voxforge-scheduler.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload && systemctl --user enable --now voxforge-scheduler
+# Edit WorkingDirectory and APP_URL to match your machine first.
+[Unit]
+Description=VoxForge alert scheduler
+After=network-online.target
+
+[Service]
+WorkingDirectory=/home/abhi/Music/VoxForge
+Environment=APP_URL=http://localhost:3000
+ExecStart=/usr/bin/env npx tsx scripts/scheduler.ts
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target
