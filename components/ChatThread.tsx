@@ -11,7 +11,6 @@ import { reasoningFromTranscript, VF_TOOLS } from "@/components/AgentRunView";
 import AgentRunView from "@/components/AgentRunView";
 import PlanGraph from "@/components/PlanGraph";
 import EditSpecPanel from "@/components/EditSpecPanel";
-import TelegramConnect from "@/components/TelegramConnect";
 import { Link } from "next-view-transitions";
 import type { AgentSpec } from "@/lib/spec-schema";
 
@@ -218,7 +217,6 @@ function DeployBubble({ item }: { item: Extract<ThreadItem, { kind: "deploy" }> 
               )}
             </p>
           </AgentCard>
-          <TelegramConnect />
         </>
       ) : (
         <TypingBubble label="Deploying your agent…" />
