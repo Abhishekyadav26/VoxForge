@@ -11,6 +11,8 @@ export interface AgentRecord {
   createdAt: string;
   lastRun?: string;
   lastTriggered?: boolean;
+  /** Paused agents are skipped by the scheduler but can still run manually. */
+  paused?: boolean;
   /** Owner (GitHub user id from the NextAuth JWT). Public/legacy rows may omit it. */
   userId?: string;
 }
@@ -50,6 +52,8 @@ interface Storage {
   getAgent(id: string, userId?: string): Promise<AgentRecord | undefined>;
   saveAgent(spec: AgentSpec, userId?: string): Promise<AgentRecord>;
   deleteAgent(id: string, userId?: string): Promise<void>;
+  /** Pause or resume an agent (paused agents are skipped by the scheduler). */
+  setAgentPaused(id: string, paused: boolean, userId?: string): Promise<void>;
   markAgentRun(id: string, triggered: boolean, userId?: string): Promise<void>;
   listRuns(agentId?: string, userId?: string): Promise<RunRecord[]>;
   saveRun(run: Omit<RunRecord, "id" | "executedAt">, userId?: string): Promise<RunRecord>;
@@ -82,6 +86,9 @@ function supabaseAgentRow(row: any): AgentRecord | undefined {
     createdAt: row.created_at ?? new Date().toISOString(),
     lastRun: row.last_run ?? undefined,
     lastTriggered: row.last_triggered ?? undefined,
+    // `paused` lives in its own column after migration 0006; older DBs
+    // carry it inside the spec envelope (written by setAgentPaused below).
+    paused: row.paused ?? (row.spec as any)?.paused ?? undefined,
     userId: row.user_id ?? undefined,
   };
 }
@@ -134,6 +141,31 @@ const supabaseStorage: Storage = {
     if (userId) q = q.eq("user_id", userId);
     const { error } = await q;
     if (error) throw new Error(`Supabase deleteAgent failed: ${error.message}`);
+  },
+  async setAgentPaused(id, paused, userId) {
+    const sb = getSupabase();
+    if (!sb) throw new Error("Supabase not configured");
+    // Prefer the dedicated column (migration 0006). If the column doesn't
+    // exist yet (migration not applied), store the flag inside the spec
+    // envelope instead — the row reader picks it up from either place.
+    let q = sb.from("agents").update({ paused }).eq("id", id);
+    if (userId) q = q.eq("user_id", userId);
+    const { error } = await q;
+    if (error) {
+      if (/paused/i.test(error.message)) {
+        const agent = await this.getAgent(id, userId);
+        if (!agent) throw new Error(`Supabase setAgentPaused failed: agent not found`);
+        let uq = sb
+          .from("agents")
+          .update({ spec: { ...agent.spec, paused } })
+          .eq("id", id);
+        if (userId) uq = uq.eq("user_id", userId);
+        const { error: uerr } = await uq;
+        if (uerr) throw new Error(`Supabase setAgentPaused failed: ${uerr.message}`);
+        return;
+      }
+      throw new Error(`Supabase setAgentPaused failed: ${error.message}`);
+    }
   },
   async markAgentRun(id, triggered, userId) {
     const sb = getSupabase();
@@ -356,6 +388,14 @@ const fileStorage: Storage = {
       (await this.listAgents(userId)).filter((a) => a.id !== id)
     );
   },
+  async setAgentPaused(id, paused, userId) {
+    const agents = await this.listAgents();
+    const a = agents.find((x) => x.id === id && ownedBy(x, userId));
+    if (a) {
+      a.paused = paused;
+      await writeJson(await agentsFile(), agents);
+    }
+  },
   async markAgentRun(id, triggered, userId) {
     const agents = await this.listAgents();
     const a = agents.find((x) => x.id === id && ownedBy(x, userId));
@@ -470,6 +510,13 @@ export async function saveAgent(
 }
 export async function deleteAgent(id: string, userId?: string): Promise<void> {
   return getStorage().deleteAgent(id, userId);
+}
+export async function setAgentPaused(
+  id: string,
+  paused: boolean,
+  userId?: string
+): Promise<void> {
+  return getStorage().setAgentPaused(id, paused, userId);
 }
 export async function markAgentRun(
   id: string,

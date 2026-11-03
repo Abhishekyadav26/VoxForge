@@ -1,5 +1,6 @@
 import { getAgent, listRuns } from "@/lib/db";
 import RunButton from "@/components/RunButton";
+import AgentControls from "@/components/AgentControls";
 import RunRow from "@/components/RunRow";
 import SpecSummary from "@/components/SpecSummary";
 import { fmtDate } from "@/lib/format-date";
@@ -51,6 +52,12 @@ export default async function AgentDetail({ params }: { params: { id: string } }
         </span>
       </div>
       <RunButton agentId={agent.id} />
+      <AgentControls agentId={agent.id} paused={agent.paused} />
+      {agent.paused && (
+        <p role="status" className="inline-flex items-center rounded-full border border-amber-800 bg-amber-950/60 px-2.5 py-1 text-[12px] font-semibold text-amber-200">
+          ⏸ Paused — the scheduler skips this agent. Resume to re-arm alerts.
+        </p>
+      )}
       {/* ux-visual C2: human summary first; raw JSON one click away */}
       <SpecSummary spec={agent.spec} />
       <details className="rounded border border-slate-800 bg-slate-900/40 px-3 py-2 text-xs text-slate-400">

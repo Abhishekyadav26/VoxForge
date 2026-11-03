@@ -48,6 +48,7 @@ export default async function AgentsPage() {
           <div className="w-full text-xs text-slate-400">
             created {fmtDate(a.createdAt)}
             {a.lastRun ? " · last run " + fmtDate(a.lastRun) : ""}
+            {a.paused ? " · ⏸ paused" : ""}
           </div>
         </Link>
       ))}

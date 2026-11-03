@@ -9,7 +9,8 @@ create table if not exists public.agents (
   spec jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now(),
   last_run timestamptz,
-  last_triggered boolean
+  last_triggered boolean,
+  paused boolean not null default false
 );
 
 -- Runs: execution history per agent (kept capped in-app to ~200).

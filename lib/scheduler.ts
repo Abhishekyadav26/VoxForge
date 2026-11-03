@@ -20,8 +20,9 @@ export function hasValidTokens(agent: AgentRecord): boolean {
     .every((st) => /^[A-Z]{2,6}$/.test(String(st.params.token ?? "").toUpperCase()));
 }
 
-/** An agent is due when it has an interval trigger and its last run is old enough. */
+/** An agent is due when it has an interval trigger, isn't paused, and its last run is old enough. */
 export function isDue(agent: AgentRecord, now: number = Date.now()): boolean {
+  if (agent.paused) return false;
   const spec = agent.spec;
   if (spec.trigger.type !== "interval") return false;
   // An alert with no condition would fire on every tick. Never auto-run one.
