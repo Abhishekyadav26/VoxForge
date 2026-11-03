@@ -18,6 +18,17 @@ export default function StudioPage() {
   const busyRef = useRef(busy);
   busyRef.current = busy;
 
+  /* ux-visual C4: exactly one primary action per thread state — the chip
+     for the next step is filled white, the rest stay ghost. Voice
+     vocabulary stays visible so the commands remain discoverable. */
+  const hasTrace = items.some((i) => i.role === "agent" && i.kind === "trace" && !i.loading);
+  const hasDeploy = items.some((i) => i.role === "agent" && i.kind === "deploy" && !!i.agentId);
+  const nextAction: VoiceCommand = !spec ? "generate" : !hasTrace ? "test" : !hasDeploy ? "deploy" : "generate";
+  const chipClass = (cmd: VoiceCommand) =>
+    cmd === nextAction
+      ? "rounded-full bg-white px-3 py-2 text-xs font-semibold text-black transition-[color,background-color,border-color,transform] duration-150 ease-out enabled:active:scale-[0.96] hover:bg-slate-200 disabled:opacity-40"
+      : "rounded-full border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-slate-300 transition-[color,background-color,border-color,transform] duration-150 ease-out enabled:active:scale-[0.96] hover:border-slate-500 hover:text-slate-100 disabled:opacity-40";
+
   const push = useCallback((item: ThreadItem) => {
     setItems((prev) => [...prev, item]);
   }, []);
@@ -217,8 +228,18 @@ export default function StudioPage() {
           <h1 className="text-xl font-bold tracking-tight text-white">VoxForge Studio</h1>
           <p className="text-xs text-slate-400">Voice → monitoring agent → Telegram alert</p>
         </div>
-        <span className="rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1 text-[11px] text-slate-400">
-          {busy ? "agent working…" : "idle · listening ready"}
+        {/* ux-visual C5: status pill reflects the latest run outcome, not just mic state */}
+        <span
+          role="status"
+          className="rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1 text-[11px] text-slate-400"
+        >
+          {busy
+            ? "agent working…"
+            : items.some((i) => i.role === "agent" && i.kind === "deploy" && i.agentId)
+              ? "agent live — watching"
+              : items.some((i) => i.role === "agent" && i.kind === "trace" && !i.loading && i.triggered)
+                ? "last run triggered"
+                : "idle · listening ready"}
         </span>
       </header>
 
@@ -234,13 +255,15 @@ export default function StudioPage() {
       {/* Composer: mic + command chips + editable transcript */}
       <div className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-800 bg-[#0b0b0b]/95 backdrop-blur-md">
         <div className="mx-auto w-full max-w-3xl px-4 py-3">
-          <div className="mb-2 flex flex-wrap items-center gap-2">
+          {/* ux-visual C4/C6: one primary chip per thread state; 2x2 grid + taller rows on mobile */}
+          <div className="mb-2 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
             {COMMAND_HINTS.map(({ cmd, hint }) => (
               <button
                 key={cmd}
                 onClick={() => handleCommand(cmd)}
                 disabled={busy}
-                className="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-xs text-slate-300 transition-[color,background-color,border-color,transform] duration-150 ease-out enabled:active:scale-[0.96] hover:border-slate-500 hover:text-slate-100 disabled:opacity-40 motion-safe:hover:border-slate-500"
+                aria-current={cmd === nextAction ? "step" : undefined}
+                className={chipClass(cmd)}
               >
                 🎙️ “{hint}”
               </button>
@@ -248,7 +271,7 @@ export default function StudioPage() {
             <button
               onClick={() => handleSend(transcript)}
               disabled={busy}
-              className="ml-auto rounded-lg bg-white px-3 py-1 text-xs font-semibold text-black transition-transform hover:bg-slate-200 active:scale-[0.96] disabled:opacity-40"
+              className="col-span-2 ml-auto rounded-lg bg-white px-3 py-2 text-xs font-semibold text-black transition-transform hover:bg-slate-200 active:scale-[0.96] disabled:opacity-40 sm:col-span-1"
             >
               Send
             </button>
@@ -270,7 +293,7 @@ export default function StudioPage() {
               onTranscript={handleTranscript}
               onCommand={handleCommand}
             />
-            <p className="text-[11px] text-slate-500">
+            <p className="text-xs text-slate-300">
               Mic on → speak the alert, then “generate plan” → “run the trace” → “deploy”
             </p>
           </div>

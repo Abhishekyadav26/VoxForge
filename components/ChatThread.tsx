@@ -137,23 +137,14 @@ function PlanBubble({
 
   const phases: AgentPhase[] = React.useMemo(() => {
     if (!item.spec) return [];
+    // ux-visual C5: reasoning only — the per-step tool rows restated the
+    // PlanGraph nodes below, so they were removed (no duplicated threshold).
     const nodes: TraceNode[] = [
       {
         type: "reasoning",
         sentences: reasoningFromTranscript(item.transcript),
         durationSeconds: Math.min(4, item.spec.steps.length + 1),
       },
-      ...item.spec.steps.map(
-        (s): TraceNode => ({
-          type: "tool",
-          toolName: s.block,
-          secondary: summarizeStep(s),
-          details: [
-            { text: s.id, tone: "muted" },
-            { text: summarizeStep(s), tone: "add" },
-          ],
-        })
-      ),
     ];
     return [
       {
@@ -166,16 +157,20 @@ function PlanBubble({
 
   return (
     <AgentCard className="border-transparent bg-transparent px-0 py-0 shadow-none">
-      <AgentWorkflow
-        phases={phases}
-        tools={VF_TOOLS}
-        workingLabel="Building your plan…"
-        onComplete={() => setRevealed(true)}
-      />
+      {/* ux-visual C5: collapse the reasoning once the graph reveals so the
+          rows can't overlap the nodes; the summary stays one click away */}
+      {!revealed && (
+        <AgentWorkflow
+          phases={phases}
+          tools={VF_TOOLS}
+          workingLabel="Building your plan…"
+          onComplete={() => setRevealed(true)}
+        />
+      )}
       {item.error && <p className="mt-1 text-[12.5px] text-rose-300">Error: {item.error}</p>}
       {revealed && (
         <div className="mt-2 space-y-2">
-          <div className="h-[240px]">
+          <div className="h-[240px] pl-1">
             <PlanGraph spec={item.spec} onSelectStep={onSelectStep} />
           </div>
           <EditSpecPanel spec={item.spec} stepId={selectedStep} onSave={onSaveSpec} />
@@ -188,14 +183,30 @@ function PlanBubble({
 /* Trace bubble: live dry-run animated over the real engine trace. */
 function TraceBubble({ item }: { item: Extract<ThreadItem, { kind: "trace" }> }) {
   if (item.loading) return <TypingBubble label="Running your monitor against live prices…" />;
+  /* ux-visual C5: status pill header states the outcome once; the diagram
+     below (via PlanGraph triggered tint) and the lines carry the detail. */
   return (
     <AgentCard className="border-transparent bg-transparent px-0 py-0 shadow-none">
+      <p
+        role="status"
+        className={
+          "mb-2 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[12px] font-semibold " +
+          (item.error
+            ? "border-rose-800 bg-rose-950/60 text-rose-200"
+            : item.triggered
+              ? "border-emerald-800 bg-emerald-950/60 text-emerald-200"
+              : "border-slate-700 bg-slate-900 text-slate-300")
+        }
+      >
+        {item.error ? "Run failed" : item.triggered ? "● Conditions met — alert sent" : "○ Conditions not met — no alert"}
+      </p>
       <AgentRunView
         transcript={item.spec.name}
         trace={item.trace}
         triggered={item.triggered}
         messages={item.messages}
         error={item.error}
+        className="trace-collapse-fix"
       />
       {item.error && <p className="mt-1 text-[12.5px] text-rose-300">Error: {item.error}</p>}
     </AgentCard>

@@ -59,10 +59,36 @@ body {
   outline-offset: 2px;
 }
 
+/* ux-visual C1+C6: chrome touch/contrast floor (design system first).
+   Raw nav/chip links never render below the 24px minimum target, helper
+   prose on dark never drops below 4.5:1, and the React Flow node labels
+   (third-party, 3.3:1 by default) are lifted to the text minimum. */
+:where(header a, header button) {
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+}
+.react-flow__node {
+  color: #e5e5e5;
+}
+@media (max-width: 640px) {
+  :where(header a, header button) {
+    min-height: 32px;
+  }
+}
+
 /* slim dark scrollbar to match */
 * {
   scrollbar-width: thin;
   scrollbar-color: #2a2a2a #0b0b0b;
+}
+
+/* ux-visual C5: TraceBubble already renders the status pill header, so the
+   workflow's own collapsed "Worked for" line would duplicate it — hide it
+   when collapsed, keep it once expanded. The settled trace view keeps the
+   single pill; the workflow duration only shows while its rows are open. */
+.trace-collapse-fix > div > button[aria-expanded="false"] {
+  display: none;
 }
 
 /* ------------------------------------------------------------------ */

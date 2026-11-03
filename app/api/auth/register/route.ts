@@ -30,6 +30,18 @@ export async function POST(req: Request) {
       data: { id: user.id, email: user.email, name: user.name },
     });
   } catch (e: any) {
+    // ux-visual C3: map Zod field errors to human per-field messages.
+    if (e?.issues) {
+      const fields: Record<string, string> = {};
+      for (const issue of e.issues) {
+        const key = String(issue.path?.[0] ?? "form");
+        if (key === "name") fields.name = "Please enter your name";
+        else if (key === "email") fields.email = "Enter a valid email address";
+        else if (key === "password") fields.password = "Password must be at least 8 characters";
+        else fields[key] = "Check this field";
+      }
+      return NextResponse.json({ success: false, error: "Check the highlighted fields", fields }, { status: 400 });
+    }
     return NextResponse.json(
       { success: false, error: e?.message ?? String(e) },
       { status: 400 }

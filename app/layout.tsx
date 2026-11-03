@@ -22,16 +22,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               its own width container; pages that start under the header use
               pt-20 to clear it. */}
           <header className="pointer-events-none fixed inset-x-0 top-0 z-50">
-            <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-6">
-              <Link href="/" className="pointer-events-auto flex items-center gap-1.5 text-lg font-bold">
-                <Mic size={16} className="text-slate-400" />
-                Voice-to-Agent Studio
+            <div className="mx-auto flex max-w-5xl items-center justify-between gap-2 px-4 py-6">
+              <Link href="/" className="pointer-events-auto flex items-center gap-1.5 whitespace-nowrap text-lg font-bold">
+                <Mic size={16} className="shrink-0 text-slate-400" />
+                {/* ux-visual C6: short brand on small screens so it never wraps/collides */}
+                <span className="hidden sm:inline">Voice-to-Agent Studio</span>
+                <span className="sm:hidden">VoxForge</span>
               </Link>
-              <nav className="pointer-events-auto flex items-center gap-4 text-sm text-slate-300">
-                <Link href="/studio" className="hover:text-white">
+              <nav className="pointer-events-auto flex items-center gap-2 whitespace-nowrap text-sm text-slate-300 sm:gap-4">
+                <Link href="/studio" className="px-1 py-1 hover:text-white">
                   Studio
                 </Link>
-                <Link href="/agents" className="hover:text-white">
+                <Link href="/agents" className="px-1 py-1 hover:text-white">
                   Agents
                 </Link>
                 <AuthButton />

@@ -41,7 +41,7 @@ export default function AuthButton() {
         </span>
       )}
       <button
-        className="text-xs text-slate-400 hover:text-white"
+        className="whitespace-nowrap px-1 py-1 text-xs text-slate-400 hover:text-white"
         onClick={() => signOut({ callbackUrl: "/" })}
         title={session.user.name ?? session.user.email ?? "Signed in"}
       >

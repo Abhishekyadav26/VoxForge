@@ -139,6 +139,7 @@ export interface AgentRunViewProps {
   messages?: string[];
   error?: string;
   autoPlay?: boolean;
+  className?: string;
 }
 
 export default function AgentRunView({
@@ -148,6 +149,7 @@ export default function AgentRunView({
   messages = [],
   error,
   autoPlay = true,
+  className,
 }: AgentRunViewProps) {
   const phases: AgentPhase[] = React.useMemo(() => {
     const nodes: TraceNode[] = [
@@ -177,6 +179,7 @@ export default function AgentRunView({
       phases={phases}
       tools={VF_TOOLS}
       workingLabel="Analyzing your alert…"
+      className={className}
       onComplete={() => {
         /* streaming conclusion finishes the view */
       }}
