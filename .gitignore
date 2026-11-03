@@ -2,6 +2,8 @@ node_modules
 .next
 out
 data/
-.env.local
+.env
+.env.*
+!.env.example
 *.tsbuildinfo
 .run/
