@@ -8,8 +8,7 @@ import { Button } from "@/components/ui/button";
 import Turnstile from "@/components/Turnstile";
 import toast from "react-hot-toast";
 
-/** Site key is public (safe to expose); empty when Turnstile isn't configured. */
-const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";
+/** Site key fetched from the server (private env, no NEXT_PUBLIC_ prefix). */
 
 export default function LoginPage() {
   const { data: session, status } = useSession();
@@ -24,6 +23,15 @@ export default function LoginPage() {
   const onTurnstileToken = useCallback((t: string | null) => setTurnstileToken(t), []);
   /* ux-visual C3: per-field inline errors instead of raw API blobs */
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [turnstileSiteKey, setTurnstileSiteKey] = useState("");
+
+  // Site key is private on the server — fetch it at runtime.
+  useEffect(() => {
+    fetch("/api/turnstile/sitekey")
+      .then((r) => r.json())
+      .then((d) => setTurnstileSiteKey(d.siteKey ?? ""))
+      .catch(() => setTurnstileSiteKey(""));
+  }, []);
 
   // Already signed in → go straight to the studio.
   useEffect(() => {
@@ -144,7 +152,7 @@ export default function LoginPage() {
               : "Create account"}
         </Button>
         {mode === "register" && (
-          <Turnstile siteKey={TURNSTILE_SITE_KEY} onToken={onTurnstileToken} />
+          <Turnstile siteKey={turnstileSiteKey} onToken={onTurnstileToken} />
         )}
       </form>
 
