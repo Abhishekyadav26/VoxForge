@@ -7,6 +7,7 @@ import { Mic, GoogleIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import Turnstile from "@/components/Turnstile";
 import toast from "react-hot-toast";
+import { PASSWORD_RESET_ENABLED } from "@/lib/features";
 
 /** Site key fetched from the server (private env, no NEXT_PUBLIC_ prefix). */
 
@@ -36,6 +37,7 @@ export default function LoginPage() {
   // ?reset=<token> links from the forgot-password email land here.
   const [resetToken, setResetToken] = useState("");
   useEffect(() => {
+    if (!PASSWORD_RESET_ENABLED) return;
     const t = new URLSearchParams(window.location.search).get("reset");
     if (t) {
       setResetToken(t);
@@ -289,7 +291,7 @@ export default function LoginPage() {
         Continue with Google
       </Button>
 
-      {mode === "signin" && (
+      {PASSWORD_RESET_ENABLED && mode === "signin" && (
         <button
           type="button"
           onClick={() => { setMode("forgot"); setFieldErrors({}); }}

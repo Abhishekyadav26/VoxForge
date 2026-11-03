@@ -5,6 +5,7 @@ import { findUserByResetTokenHash, updateUserPassword } from "@/lib/db";
 import { verifyTurnstile } from "@/lib/turnstile";
 import { getClientIp, rateLimit } from "@/lib/rate-limit";
 import { hashResetToken } from "@/lib/password-reset";
+import { PASSWORD_RESET_ENABLED } from "@/lib/features";
 
 const Body = z.object({
   token: z.string().min(32).max(128),
@@ -24,6 +25,13 @@ const RATE_WINDOW_MS = 15 * 60 * 1000;
  * to the flow.
  */
 export async function POST(req: Request) {
+  if (!PASSWORD_RESET_ENABLED) {
+    return NextResponse.json(
+      { success: false, error: "Password reset is currently unavailable." },
+      { status: 503 }
+    );
+  }
+
   try {
     const { token, password, turnstileToken } = Body.parse(await req.json());
     const ip = getClientIp(req);

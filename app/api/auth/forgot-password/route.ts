@@ -3,6 +3,7 @@ import { z } from "zod";
 import { findByEmail, setPasswordReset } from "@/lib/db";
 import { verifyTurnstile } from "@/lib/turnstile";
 import { getClientIp, padToMinDuration, rateLimit } from "@/lib/rate-limit";
+import { PASSWORD_RESET_ENABLED } from "@/lib/features";
 import {
   generateResetToken,
   hashResetToken,
@@ -28,6 +29,15 @@ const RATE_WINDOW_MS = 15 * 60 * 1000;
  * in production a missing mailer returns 503 rather than pretending to send.
  */
 export async function POST(req: Request) {
+  // Feature is off until a verified Resend domain is available. The UI hides
+  // the entry point as well; this guard covers direct API calls.
+  if (!PASSWORD_RESET_ENABLED) {
+    return NextResponse.json(
+      { success: false, error: "Password reset is currently unavailable." },
+      { status: 503 }
+    );
+  }
+
   const startedAt = Date.now();
   try {
     const { email, turnstileToken } = Body.parse(await req.json());

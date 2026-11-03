@@ -20,6 +20,8 @@ export const EnvSchema = z.object({
   // the reset link; production cannot complete a reset.
   RESEND_API_KEY: z.string().optional(),
   PASSWORD_RESET_FROM: z.string().optional(),
+  // Feature flag: password reset is disabled unless this is "true".
+  NEXT_PUBLIC_PASSWORD_RESET_ENABLED: z.string().optional(),
   // Cloudflare Turnstile (bot protection on auth endpoints).
   TURNSTILE_SITE_KEY: z.string().optional(),
   TURNSTILE_SECRET: z.string().optional(),
