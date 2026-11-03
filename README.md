@@ -97,10 +97,13 @@ supabase/migrations/  0001_init … 0006_agent_pause (agents/runs/users schema)
 | `NEXTAUTH_URL` | Base URL for NextAuth (must match the port you run on) | — |
 | `NEXTAUTH_SECRET` | OpenSSL rand -base64 32 for session signatures | — |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google OAuth 2.0 credentials | — |
+| `TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET` | Cloudflare Turnstile bot check on register/sign-in/reset | verification skipped (dev only) |
+| `RESEND_API_KEY` | Sends password-reset emails via Resend | link logged in dev; resets unavailable in prod |
+| `PASSWORD_RESET_FROM` | Verified Resend sender | `VoxForge <no-reply@voxforge.app>` |
 | `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | Cloud persistence (Supabase); when omitted, falls back to local JSON files | — |
 | `CRON_SECRET` | Bearer token to protect `/api/cron/run-due` | endpoint returns 503 |
 
-Run `supabase/migrations/*.sql` once in the Supabase SQL editor (in order); `0006_agent_pause.sql` is safe to re-run on existing databases.
+Run `supabase/migrations/*.sql` once in the Supabase SQL editor (in order); `0006_agent_pause.sql`, `0007_password_reset.sql` and `0008_session_version.sql` are safe to re-run on existing databases. Password resets require `0007`; changing a password bumps `session_version` (`0008`) to revoke existing sessions.
 
 **Data sources:** prices use the official [`@coinmarketcap/sdk`](https://www.npmjs.com/package/@coinmarketcap/sdk) (`quotes/latest`, id-resolved to dodge dead-ticker collisions); wallet balances use the public Solana RPC (`api.mainnet-beta.solana.com`) — no Helius/Jupiter keys needed.
 

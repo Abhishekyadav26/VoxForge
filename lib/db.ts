@@ -39,6 +39,11 @@ export interface UserRecord {
   /** One-time bind code shown to the user (expires). */
   telegramCode?: string;
   telegramCodeExpiresAt?: string;
+  /** SHA-256 hash of the active password-reset token (raw token never stored). */
+  passwordResetTokenHash?: string;
+  passwordResetExpiresAt?: string;
+  /** Bumped on password change; JWTs carrying an older version are rejected. */
+  sessionVersion?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -66,6 +71,12 @@ interface Storage {
   setTelegramBind(userId: string, code: string, expiresAt: string): Promise<void>;
   /** Consume a bind code: link the chat_id to the user, clear the code. */
   bindTelegramChat(code: string, chatId: string): Promise<string | undefined>;
+  /** Store (or refresh) a password-reset token hash with an expiry. */
+  setPasswordReset(userId: string, tokenHash: string, expiresAt: string): Promise<void>;
+  /** Find the user holding this reset-token hash (caller checks expiry). */
+  findUserByResetTokenHash(tokenHash: string): Promise<UserRecord | undefined>;
+  /** Set a new password hash and clear any active reset token. */
+  updateUserPassword(userId: string, passwordHash: string): Promise<void>;
 }
 
 // ---------- Supabase backend ----------
@@ -246,6 +257,7 @@ const supabaseStorage: Storage = {
       name: data.name ?? undefined,
       passwordHash: data.password_hash ?? undefined,
       createdAt: data.created_at ?? new Date().toISOString(),
+      sessionVersion: data.session_version ?? 0,
     };
   },
   async createUser(user) {
@@ -256,6 +268,7 @@ const supabaseStorage: Storage = {
       email: user.email.toLowerCase(),
       id: `user_${Date.now().toString(36)}`,
       createdAt: new Date().toISOString(),
+      sessionVersion: 0,
     };
     const { error } = await sb.from("users").insert({
       id: rec.id,
@@ -285,7 +298,84 @@ const supabaseStorage: Storage = {
       passwordHash: data.password_hash ?? undefined,
       createdAt: data.created_at ?? new Date().toISOString(),
       telegramChatId: data.telegram_chat_id ?? undefined,
+      passwordResetTokenHash: data.password_reset_token_hash ?? undefined,
+      passwordResetExpiresAt: data.password_reset_expires_at ?? undefined,
+      sessionVersion: data.session_version ?? 0,
     };
+  },
+  async setPasswordReset(userId, tokenHash, expiresAt) {
+    const sb = getSupabase();
+    if (!sb) throw new Error("Supabase not configured");
+    const { error } = await sb
+      .from("users")
+      .update({
+        password_reset_token_hash: tokenHash,
+        password_reset_expires_at: expiresAt,
+      })
+      .eq("id", userId);
+    if (error) throw new Error(`Supabase setPasswordReset failed: ${error.message}`);
+  },
+  async findUserByResetTokenHash(tokenHash) {
+    const sb = getSupabase();
+    if (!sb) throw new Error("Supabase not configured");
+    const { data, error } = await sb
+      .from("users")
+      .select("*")
+      .eq("password_reset_token_hash", tokenHash)
+      .maybeSingle();
+    if (error) throw new Error(`Supabase findUserByResetTokenHash failed: ${error.message}`);
+    if (!data) return undefined;
+    return {
+      id: data.id,
+      email: data.email,
+      name: data.name ?? undefined,
+      passwordHash: data.password_hash ?? undefined,
+      createdAt: data.created_at ?? new Date().toISOString(),
+      telegramChatId: data.telegram_chat_id ?? undefined,
+      passwordResetTokenHash: data.password_reset_token_hash ?? undefined,
+      passwordResetExpiresAt: data.password_reset_expires_at ?? undefined,
+      sessionVersion: data.session_version ?? 0,
+    };
+  },
+  async updateUserPassword(userId, passwordHash) {
+    const sb = getSupabase();
+    if (!sb) throw new Error("Supabase not configured");
+    // Bump session_version in the same update so every existing JWT for this
+    // user becomes invalid immediately (see the jwt callback in lib/auth.ts).
+    const { data: current, error: readErr } = await sb
+      .from("users")
+      .select("session_version")
+      .eq("id", userId)
+      .maybeSingle();
+    if (readErr)
+      throw new Error(`Supabase updateUserPassword (read) failed: ${readErr.message}`);
+    const nextVersion = (current?.session_version ?? 0) + 1;
+    const { error } = await sb
+      .from("users")
+      .update({
+        password_hash: passwordHash,
+        password_reset_token_hash: null,
+        password_reset_expires_at: null,
+        session_version: nextVersion,
+      })
+      .eq("id", userId);
+    if (!error) return;
+
+    // Deployment safety: if 0008_session_version.sql hasn't been applied yet,
+    // still rotate the password; existing sessions just won't be revoked.
+    console.warn(
+      "[db] session_version update failed — run 0008_session_version.sql:",
+      error.message
+    );
+    const { error: retryErr } = await sb
+      .from("users")
+      .update({
+        password_hash: passwordHash,
+        password_reset_token_hash: null,
+        password_reset_expires_at: null,
+      })
+      .eq("id", userId);
+    if (retryErr) throw new Error(`Supabase updateUserPassword failed: ${retryErr.message}`);
   },
   async setTelegramBind(userId, code, expiresAt) {
     const sb = getSupabase();
@@ -432,6 +522,7 @@ const fileStorage: Storage = {
       email: user.email.toLowerCase(),
       id: `user_${Date.now().toString(36)}`,
       createdAt: new Date().toISOString(),
+      sessionVersion: 0,
     };
     users.unshift(rec);
     await writeJson(await usersFile(), users);
@@ -469,6 +560,29 @@ const fileStorage: Storage = {
     delete u.telegramCodeExpiresAt;
     await writeJson(await usersFile(), users);
     return u.id;
+  },
+  async setPasswordReset(userId, tokenHash, expiresAt) {
+    const users = await readJson<UserRecord[]>(await usersFile(), []);
+    const u = users.find((x) => x.id === userId);
+    if (!u) throw new Error("User not found");
+    u.passwordResetTokenHash = tokenHash;
+    u.passwordResetExpiresAt = expiresAt;
+    await writeJson(await usersFile(), users);
+  },
+  async findUserByResetTokenHash(tokenHash) {
+    const users = await readJson<UserRecord[]>(await usersFile(), []);
+    const u = users.find((x) => x.passwordResetTokenHash === tokenHash);
+    return u ? { ...u } : undefined;
+  },
+  async updateUserPassword(userId, passwordHash) {
+    const users = await readJson<UserRecord[]>(await usersFile(), []);
+    const u = users.find((x) => x.id === userId);
+    if (!u) throw new Error("User not found");
+    u.passwordHash = passwordHash;
+    delete u.passwordResetTokenHash;
+    delete u.passwordResetExpiresAt;
+    u.sessionVersion = (u.sessionVersion ?? 0) + 1;
+    await writeJson(await usersFile(), users);
   },
 };
 
@@ -569,4 +683,22 @@ export async function bindTelegramChat(
   chatId: string
 ): Promise<string | undefined> {
   return getStorage().bindTelegramChat(code, chatId);
+}
+export async function setPasswordReset(
+  userId: string,
+  tokenHash: string,
+  expiresAt: string
+): Promise<void> {
+  return getStorage().setPasswordReset(userId, tokenHash, expiresAt);
+}
+export async function findUserByResetTokenHash(
+  tokenHash: string
+): Promise<UserRecord | undefined> {
+  return getStorage().findUserByResetTokenHash(tokenHash);
+}
+export async function updateUserPassword(
+  userId: string,
+  passwordHash: string
+): Promise<void> {
+  return getStorage().updateUserPassword(userId, passwordHash);
 }

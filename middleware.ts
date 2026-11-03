@@ -11,7 +11,8 @@ export default withAuth(
   function middleware(req) {
     // API routes: return JSON 401 instead of a redirect.
     if (req.nextUrl.pathname.startsWith("/api/")) {
-      if (!req.nextauth.token) {
+      const token = req.nextauth.token as { invalid?: boolean } | null;
+      if (!token || token.invalid) {
         return NextResponse.json(
           { success: false, error: "Unauthorized. Please sign in." },
           { status: 401 }
@@ -24,9 +25,9 @@ export default withAuth(
     callbacks: {
       authorized: ({ token, req }) => {
         // Allow API routes through to the middleware body so they can return
-        // a JSON 401. Pages are only allowed when a token is present.
+        // a JSON 401. Pages are only allowed when a valid token is present.
         if (req.nextUrl.pathname.startsWith("/api/")) return true;
-        return !!token;
+        return !!token && !(token as { invalid?: boolean }).invalid;
       },
     },
     pages: { signIn: "/login" },

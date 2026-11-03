@@ -16,6 +16,13 @@ export const EnvSchema = z.object({
   // to local JSON files (see lib/db.ts).
   SUPABASE_URL: z.string().optional(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
+  // Password-reset email delivery (Resend HTTP API). Without a key, dev logs
+  // the reset link; production cannot complete a reset.
+  RESEND_API_KEY: z.string().optional(),
+  PASSWORD_RESET_FROM: z.string().optional(),
+  // Cloudflare Turnstile (bot protection on auth endpoints).
+  TURNSTILE_SITE_KEY: z.string().optional(),
+  TURNSTILE_SECRET: z.string().optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

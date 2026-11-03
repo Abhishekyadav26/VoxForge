@@ -2,7 +2,7 @@ import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
-import { findByEmail, findOrCreateOAuthUser } from "@/lib/db";
+import { findByEmail, findOrCreateOAuthUser, getUserById } from "@/lib/db";
 import { verifyTurnstile } from "@/lib/turnstile";
 
 /**
@@ -54,7 +54,9 @@ export const authOptions: NextAuthOptions = {
             id: user.id,
             email: user.email,
             name: user.name ?? user.email.split("@")[0],
-          };
+            // Carried into the JWT so a later password change can revoke it.
+            sessionVersion: user.sessionVersion ?? 0,
+          } as any;
         } catch (e) {
           console.error("[auth] authorize error:", e);
           return null;
@@ -81,13 +83,34 @@ export const authOptions: NextAuthOptions = {
               name: user.name ?? undefined,
             });
             token.uid = local.id;
+            token.sv = local.sessionVersion ?? 0;
           } catch (e) {
             console.error("[auth] google link error:", e);
             token.uid = user.id; // fall back to provider id
+            token.sv = 0;
           }
         } else {
           // Credentials sign-in already returns the store id.
           token.uid = user.id;
+          token.sv = (user as any).sessionVersion ?? 0;
+        }
+        delete token.invalid;
+        return token;
+      }
+
+      // Every later request: verify the session version so a password reset
+      // (which bumps it) logs out all existing sessions for that user. If the
+      // store is unavailable we keep the session rather than fail closed.
+      if (token.uid) {
+        try {
+          const current = await getUserById(token.uid as string);
+          if (!current || (current.sessionVersion ?? 0) !== (token.sv ?? 0)) {
+            token.invalid = true;
+            token.uid = undefined;
+            delete token.sv;
+          }
+        } catch (e) {
+          console.warn("[auth] session version check failed:", (e as Error).message);
         }
       }
       return token;

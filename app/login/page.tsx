@@ -14,7 +14,7 @@ export default function LoginPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  const [mode, setMode] = useState<"signin" | "register">("signin");
+  const [mode, setMode] = useState<"signin" | "register" | "forgot" | "forgot-sent" | "reset">("signin");
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
@@ -33,16 +33,73 @@ export default function LoginPage() {
       .catch(() => setTurnstileSiteKey(""));
   }, []);
 
-  // Already signed in → go straight to the studio.
+  // ?reset=<token> links from the forgot-password email land here.
+  const [resetToken, setResetToken] = useState("");
   useEffect(() => {
-    if (status === "authenticated") router.replace("/studio");
-  }, [status, router]);
+    const t = new URLSearchParams(window.location.search).get("reset");
+    if (t) {
+      setResetToken(t);
+      setMode("reset");
+    }
+  }, []);
+
+  // Already signed in → go straight to the studio (but stay for ?reset= links
+  // so a signed-in user opening their own reset link still sees the form).
+  useEffect(() => {
+    if (status === "authenticated" && !resetToken) router.replace("/studio");
+  }, [status, router, resetToken]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
     setFieldErrors({});
     try {
+      if (mode === "forgot") {
+        const res = await fetch("/api/auth/forgot-password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, turnstileToken }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          if (data.fields) {
+            setFieldErrors(data.fields);
+            if (data.fields.turnstile) toast.error(data.fields.turnstile);
+            setBusy(false);
+            return;
+          }
+          throw new Error(data.error ?? "Request failed");
+        }
+        setMode("forgot-sent");
+        setBusy(false);
+        return;
+      }
+
+      if (mode === "reset") {
+        const res = await fetch("/api/auth/reset-password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token: resetToken, password, turnstileToken }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          if (data.fields) {
+            setFieldErrors(data.fields);
+            if (data.fields.turnstile) toast.error(data.fields.turnstile);
+            setBusy(false);
+            return;
+          }
+          throw new Error(data.error ?? "Reset failed");
+        }
+        toast.success("Password updated — sign in with your new password.");
+        setPassword("");
+        setResetToken("");
+        window.history.replaceState(null, "", "/login");
+        setMode("signin");
+        setBusy(false);
+        return;
+      }
+
       if (mode === "register") {
         // Client-side first so the common empty-name case never hits the API.
         if (!name.trim()) {
@@ -103,56 +160,114 @@ export default function LoginPage() {
       </p>
 
       <form onSubmit={handleSubmit} className="w-full space-y-3 text-left" noValidate>
-        {mode === "register" && (
-          <div>
-            <input
-              type="text"
-              placeholder="Your name (optional)"
-              value={name}
-              aria-invalid={!!fieldErrors.name}
-              aria-describedby={fieldErrors.name ? "name-error" : undefined}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 outline-none focus:border-slate-400"
-            />
-            {fieldErrors.name && <p id="name-error" role="alert" className="mt-1 text-xs text-rose-300">{fieldErrors.name}</p>}
+        {mode === "forgot-sent" ? (
+          <div className="rounded-md border border-slate-700 bg-slate-900 px-4 py-5 text-center">
+            <p className="text-sm font-medium text-slate-100">Check your email</p>
+            <p className="mt-1 text-sm text-slate-400">
+              If an email/password account exists for{" "}
+              <span className="text-slate-200">{email}</span>, a reset link is on its way (valid 1 hour).
+            </p>
+            <p className="mt-2 text-xs text-slate-500">
+              Signed up with Google? Use “Continue with Google” below instead.
+            </p>
+            <button
+              type="button"
+              onClick={() => setMode("signin")}
+              className="mt-3 text-sm text-slate-400 underline hover:text-white"
+            >
+              Back to sign in
+            </button>
           </div>
-        )}
-        <div>
-          <input
-            type="email"
-            required
-            placeholder="Email"
-            value={email}
-            aria-invalid={!!fieldErrors.email}
-            aria-describedby={fieldErrors.email ? "email-error" : undefined}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 outline-none focus:border-slate-400"
-          />
-          {fieldErrors.email && <p id="email-error" role="alert" className="mt-1 text-xs text-rose-300">{fieldErrors.email}</p>}
-        </div>
-        <div>
-          <input
-            type="password"
-            required
-            minLength={8}
-            placeholder="Password (min 8 characters)"
-            value={password}
-            aria-invalid={!!fieldErrors.password}
-            aria-describedby={fieldErrors.password ? "password-error" : undefined}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 outline-none focus:border-slate-400"
-          />
-          {fieldErrors.password && <p id="password-error" role="alert" className="mt-1 text-xs text-rose-300">{fieldErrors.password}</p>}
-        </div>
-        <Button type="submit" size="lg" className="w-full" disabled={busy}>
-          {busy
-            ? "Please wait…"
-            : mode === "signin"
-              ? "Sign in"
-              : "Create account"}
-        </Button>
-        {mode === "register" && (
-          <Turnstile siteKey={turnstileSiteKey} onToken={onTurnstileToken} />
+        ) : (
+          <>
+            {mode === "reset" && (
+              <>
+                <p className="text-sm text-slate-400">Choose a new password for your account.</p>
+                {fieldErrors.form && (
+                  <p role="alert" className="text-xs text-rose-300">
+                    {fieldErrors.form}
+                  </p>
+                )}
+              </>
+            )}
+            {mode === "forgot" && (
+              <p className="text-sm text-slate-400">Enter your account email and we&apos;ll send you a reset link.</p>
+            )}
+            {mode === "register" && (
+              <div>
+                <input
+                  type="text"
+                  placeholder="Your name (optional)"
+                  value={name}
+                  aria-invalid={!!fieldErrors.name}
+                  aria-describedby={fieldErrors.name ? "name-error" : undefined}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 outline-none focus:border-slate-400"
+                />
+                {fieldErrors.name && <p id="name-error" role="alert" className="mt-1 text-xs text-rose-300">{fieldErrors.name}</p>}
+              </div>
+            )}
+            {mode !== "reset" && (
+              <div>
+                <input
+                  type="email"
+                  required
+                  placeholder="Email"
+                  value={email}
+                  aria-invalid={!!fieldErrors.email}
+                  aria-describedby={fieldErrors.email ? "email-error" : undefined}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 outline-none focus:border-slate-400"
+                />
+                {fieldErrors.email && <p id="email-error" role="alert" className="mt-1 text-xs text-rose-300">{fieldErrors.email}</p>}
+              </div>
+            )}
+            {mode !== "forgot" && (
+              <div>
+                <input
+                  type="password"
+                  required
+                  minLength={8}
+                  placeholder={mode === "reset" ? "New password (min 8 characters)" : "Password (min 8 characters)"}
+                  value={password}
+                  aria-invalid={!!fieldErrors.password}
+                  aria-describedby={fieldErrors.password ? "password-error" : undefined}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 outline-none focus:border-slate-400"
+                />
+                {fieldErrors.password && <p id="password-error" role="alert" className="mt-1 text-xs text-rose-300">{fieldErrors.password}</p>}
+              </div>
+            )}
+            <Button type="submit" size="lg" className="w-full" disabled={busy}>
+              {busy
+                ? "Please wait…"
+                : mode === "signin"
+                  ? "Sign in"
+                  : mode === "register"
+                    ? "Create account"
+                    : mode === "forgot"
+                      ? "Send reset link"
+                      : "Set new password"}
+            </Button>
+            {mode !== "signin" && (
+              <Turnstile siteKey={turnstileSiteKey} onToken={onTurnstileToken} />
+            )}
+            {mode === "reset" && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("forgot");
+                  setResetToken("");
+                  setPassword("");
+                  setFieldErrors({});
+                  window.history.replaceState(null, "", "/login");
+                }}
+                className="w-full text-sm text-slate-400 underline hover:text-white"
+              >
+                Link expired or invalid? Request a new one
+              </button>
+            )}
+          </>
         )}
       </form>
 
@@ -174,9 +289,24 @@ export default function LoginPage() {
         Continue with Google
       </Button>
 
+      {mode === "signin" && (
+        <button
+          type="button"
+          onClick={() => { setMode("forgot"); setFieldErrors({}); }}
+          className="text-sm text-slate-400 underline hover:text-white"
+        >
+          Forgot your password?
+        </button>
+      )}
+
       <button
         type="button"
-        onClick={() => setMode(mode === "signin" ? "register" : "signin")}
+        onClick={() => {
+          setFieldErrors({});
+          if (mode === "signin") setMode("register");
+          else if (mode === "register") setMode("signin");
+          else setMode("signin");
+        }}
         className="text-sm text-slate-400 underline hover:text-white"
       >
         {mode === "signin"
