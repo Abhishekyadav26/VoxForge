@@ -82,7 +82,7 @@ supabase/migrations/  0001_init … 0006_agent_pause (agents/runs/users schema)
 4. **Dry-run** — `/api/test-spec` executes the graph and prints a trace ("s1.price (91.7…) < 150? YES"); the outcome shows as a status pill.
 5. **Deploy** — `/api/deploy-agent` saves the agent, sends a Telegram confirmation, and auto-runs once; results render in `/agents/[id]`.
 6. **Run / pause / delete** — `RunButton` triggers a live run any time; `AgentControls` pauses (scheduler skips paused agents) or deletes with confirmation.
-7. **Scheduler** — `/api/cron/run-due` (Vercel cron, every 5 min) runs due interval agents sequentially and sends Telegram alerts only when a condition flips false→true (no repeat spam). Local alternative: `pnpm scheduler` / `scripts/scheduler-service.sh start`. `CRON_SECRET` bearer token protects the endpoint.
+7. **Scheduler** — runs due interval agents sequentially and sends Telegram alerts only when a condition flips false→true (no repeat spam). On Vercel Hobby the built-in cron is daily-only (`0 0 * * *`), so frequent polling comes from the GitHub Actions workflow (`.github/workflows/scheduler.yml`, every 5 min, needs `VOXFORGE_BASE_URL` + `CRON_SECRET` repo secrets) — or run the local poller: `pnpm scheduler` / `scripts/scheduler-service.sh start`. `CRON_SECRET` bearer token protects the endpoint.
 8. **Agents page** (`/agents`) — list with status pills and relative times; detail morphs from the card via view transitions.
 
 ## Environment

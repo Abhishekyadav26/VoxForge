@@ -1,0 +1,31 @@
+# VoxForge scheduler — polls due agents every 5 minutes.
+#
+# Vercel's Hobby plan only allows once-daily crons, so this workflow pings
+# the same /api/cron/run-due endpoint GitHub-side on the cadence agents
+# actually need. Requires two repo secrets:
+#   VOXFORGE_BASE_URL — e.g. https://vox-forge.vercel.app (no trailing slash)
+#   CRON_SECRET        — same value as the CRON_SECRET env var on Vercel
+name: scheduler
+
+on:
+  schedule:
+    - cron: "*/5 * * * *" # every 5 minutes (UTC)
+  workflow_dispatch: {} # allow manual runs from the Actions tab
+
+jobs:
+  run-due:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger run-due
+        run: |
+          code=$(curl -s -o /tmp/run-due.json -w "%{http_code}" \
+            -X POST "$VOXFORGE_BASE_URL/api/cron/run-due" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            --max-time 55)
+          cat /tmp/run-due.json
+          echo "http_code=$code"
+          test "$code" -lt 500
+        env:
+          VOXFORGE_BASE_URL: ${{ secrets.VOXFORGE_BASE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
