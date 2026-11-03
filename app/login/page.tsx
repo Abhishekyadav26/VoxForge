@@ -1,11 +1,15 @@
 "use client";
 
 import { signIn, useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Mic, GoogleIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
+import Turnstile from "@/components/Turnstile";
 import toast from "react-hot-toast";
+
+/** Site key is public (safe to expose); empty when Turnstile isn't configured. */
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";
 
 export default function LoginPage() {
   const { data: session, status } = useSession();
@@ -16,6 +20,8 @@ export default function LoginPage() {
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const onTurnstileToken = useCallback((t: string | null) => setTurnstileToken(t), []);
   /* ux-visual C3: per-field inline errors instead of raw API blobs */
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
@@ -39,12 +45,13 @@ export default function LoginPage() {
         const res = await fetch("/api/auth/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, name, password }),
+          body: JSON.stringify({ email, name, password, turnstileToken }),
         });
         const data = await res.json();
         if (!res.ok || !data.success) {
           if (data.fields) {
             setFieldErrors(data.fields);
+            if (data.fields.turnstile) toast.error(data.fields.turnstile);
             setBusy(false);
             return;
           }
@@ -56,10 +63,18 @@ export default function LoginPage() {
       const result = await signIn("credentials", {
         email,
         password,
+        turnstileToken: mode === "register" ? (turnstileToken ?? "") : undefined,
         redirect: false,
         callbackUrl: "/studio",
       });
-      if (result?.error) throw new Error("Invalid email or password");
+      if (result?.error) {
+        // Turnstile failures come back as authorize errors — surface clearly.
+        throw new Error(
+          /verification|human|challenge/i.test(result.error)
+            ? result.error
+            : "Invalid email or password"
+        );
+      }
       router.push(result?.url ?? "/studio");
     } catch (err: any) {
       toast.error(err?.message ?? "Something went wrong");
@@ -128,6 +143,9 @@ export default function LoginPage() {
               ? "Sign in"
               : "Create account"}
         </Button>
+        {mode === "register" && (
+          <Turnstile siteKey={TURNSTILE_SITE_KEY} onToken={onTurnstileToken} />
+        )}
       </form>
 
       <div className="flex items-center gap-3 text-xs text-slate-500">

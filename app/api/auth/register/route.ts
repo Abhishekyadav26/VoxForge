@@ -2,16 +2,29 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { createUser, findByEmail } from "@/lib/db";
+import { verifyTurnstile } from "@/lib/turnstile";
 
 const Body = z.object({
   email: z.string().email(),
   name: z.string().min(1).max(60).optional(),
   password: z.string().min(8).max(128),
+  turnstileToken: z.string().max(2048).nullish(),
 });
 
 export async function POST(req: Request) {
   try {
-    const { email, name, password } = Body.parse(await req.json());
+    const { email, name, password, turnstileToken } = Body.parse(await req.json());
+
+    // Human check first (fail fast, before the user lookup) so automated
+    // enumeration/credential-stuffing can't cheaply probe the endpoint.
+    const human = await verifyTurnstile(turnstileToken);
+    if (!human.ok) {
+      return NextResponse.json(
+        { success: false, error: human.error, fields: { turnstile: human.error } },
+        { status: 403 }
+      );
+    }
+
     const norm = email.toLowerCase();
 
     const existing = await findByEmail(norm);

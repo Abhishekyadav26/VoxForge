@@ -3,6 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 import { findByEmail, findOrCreateOAuthUser } from "@/lib/db";
+import { verifyTurnstile } from "@/lib/turnstile";
 
 /**
  * NextAuth configuration with email/password + Google OAuth.
@@ -30,9 +31,16 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
+        turnstileToken: { label: "Turnstile", type: "text" },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
+        // Human check first (fail fast): blocks automated
+        // credential-stuffing and account-enumeration via sign-in.
+        const human = await verifyTurnstile(
+          (credentials as Record<string, unknown>).turnstileToken
+        );
+        if (!human.ok) throw new Error(human.error ?? "Human verification failed");
         const email = credentials.email.toLowerCase();
         // Basic shape check before hitting storage.
         if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return null;
