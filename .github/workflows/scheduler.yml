@@ -16,16 +16,52 @@ jobs:
   run-due:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    # Never let a 5-minute cadence stack up slow runs.
+    concurrency:
+      group: run-due
+      cancel-in-progress: false
     steps:
-      - name: Trigger run-due
-        run: |
-          code=$(curl -s -o /tmp/run-due.json -w "%{http_code}" \
-            -X POST "$VOXFORGE_BASE_URL/api/cron/run-due" \
-            -H "Authorization: Bearer $CRON_SECRET" \
-            --max-time 55)
-          cat /tmp/run-due.json
-          echo "http_code=$code"
-          test "$code" -lt 500
+      - name: Check configuration
         env:
           VOXFORGE_BASE_URL: ${{ secrets.VOXFORGE_BASE_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          missing=""
+          [ -n "$VOXFORGE_BASE_URL" ] || missing="$missing VOXFORGE_BASE_URL"
+          [ -n "$CRON_SECRET" ] || missing="$missing CRON_SECRET"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repository secret(s):$missing"
+            echo "Add them under Settings → Secrets and variables → Actions (repository secrets)."
+            exit 1
+          fi
+          case "$VOXFORGE_BASE_URL" in
+            https://*|http://*) ;;
+            *)
+              echo "::error::VOXFORGE_BASE_URL must include the scheme, e.g. https://vox-forge.vercel.app (got: '$VOXFORGE_BASE_URL')."
+              exit 1
+              ;;
+          esac
+
+      - name: Trigger run-due
+        env:
+          VOXFORGE_BASE_URL: ${{ secrets.VOXFORGE_BASE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          # Normalise a trailing slash so the path never doubles up.
+          base="${VOXFORGE_BASE_URL%/}"
+          url="$base/api/cron/run-due"
+          set +e
+          code=$(curl -sS -o /tmp/run-due.json -w "%{http_code}" \
+            -X POST "$url" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            --max-time 55)
+          rc=$?
+          set -e
+          echo "POST $url — curl exit $rc, http_code=$code"
+          cat /tmp/run-due.json || true
+          echo
+          if [ "$rc" -ne 0 ]; then
+            echo "::error::curl exited $rc (3 = malformed URL, 6 = DNS, 28 = timeout, 35 = TLS). Check VOXFORGE_BASE_URL."
+            exit "$rc"
+          fi
+          test "$code" -lt 500
