@@ -75,7 +75,7 @@ function AgentCard({
   return (
     <div
       className={cn(
-        "w-full max-w-[95%] rounded-xl border border-slate-700/70 bg-slate-900/60 px-3.5 py-3 shadow-sm",
+        "w-full max-w-[95%] rounded-2xl border border-white/[0.06] bg-slate-900/50 px-4 py-3.5",
         className
       )}
     >

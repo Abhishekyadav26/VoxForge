@@ -12,8 +12,8 @@ export default async function AgentsPage() {
   if (!session?.user?.id) redirect("/login");
   const agents = await listAgents(session.user.id);
   return (
-    <main className="mx-auto max-w-5xl space-y-4 px-4 pt-20">
-      <h1 className="text-2xl font-bold">
+    <main className="mx-auto max-w-5xl space-y-4 px-4 pb-16 pt-20">
+      <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
         Agents ({agents.length})
       </h1>
       {agents.length === 0 && (
@@ -29,26 +29,36 @@ export default async function AgentsPage() {
         <Link
           key={a.id}
           href={"/agents/" + a.id}
-          className="flex flex-wrap items-center gap-2 rounded border border-slate-700 p-4 hover:border-slate-300"
+          className="group flex flex-wrap items-center gap-x-2.5 gap-y-1.5 rounded-2xl border border-white/[0.08] bg-[#151517] p-4 transition-colors duration-150 hover:border-slate-600 hover:bg-slate-900 sm:p-5"
           style={
             { viewTransitionName: "agent-card-" + a.id, viewTransitionClass: "agent-card" } as React.CSSProperties
           }
         >
-          <div className="min-w-0 break-words font-semibold">{a.name}</div>
-          <span
-            className={
-              "inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold " +
-              (a.lastTriggered
-                ? "border-emerald-800 bg-emerald-950/60 text-emerald-200"
-                : "border-slate-700 bg-slate-900 text-slate-300")
-            }
-          >
-            {a.lastRun ? (a.lastTriggered ? "● triggered" : "○ quiet") : "○ new"}
+          <div className="min-w-0 break-words text-[15px] font-semibold text-slate-100">{a.name}</div>
+          {/* Status as a small dot + word (Vibrant ref: Edge Infrastructure Dashboard) */}
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.06] bg-white/[0.03] px-2 py-0.5 text-[11px] font-medium text-slate-300">
+            <span
+              aria-hidden
+              className={
+                "h-1.5 w-1.5 rounded-full " +
+                (a.lastTriggered
+                  ? "bg-emerald-400"
+                  : a.lastRun
+                    ? "bg-slate-400"
+                    : "border border-slate-500 bg-transparent")
+              }
+            />
+            {a.lastTriggered ? "triggered" : a.lastRun ? "quiet" : "new"}
           </span>
           <div className="w-full text-xs text-slate-400">
-            created {fmtDate(a.createdAt)}
-            {a.lastRun ? " · last run " + fmtDate(a.lastRun) : ""}
-            {a.paused ? " · ⏸ paused" : ""}
+            <span className="text-slate-500">created</span> {fmtDate(a.createdAt)}
+            {a.lastRun ? <> · <span className="text-slate-500">last run</span> {fmtDate(a.lastRun)}</> : null}
+            {a.paused ? (
+              <>
+                {" · "}
+                <span className="whitespace-nowrap">⏸ paused</span>
+              </>
+            ) : null}
           </div>
         </Link>
       ))}

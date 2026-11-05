@@ -1,8 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
-import { Mic } from "@/components/icons";
-import { Button } from "@/components/ui/button";
 
 export type VoiceCommand = "generate" | "test" | "deploy" | "clear";
 
@@ -154,16 +152,42 @@ export default function VoiceRecorder({ onTranscript, onPartial, onError, onComm
   if (!supported) {
     return <p className="text-sm text-slate-400">Speech not supported in this browser — use the text box below instead.</p>;
   }
+const WAVE = [45, 75, 100, 60, 90, 50, 70];
+
   return (<div className="flex min-w-0 items-center gap-3">
-    <Button
+    {/* Dictation pill (Vibrant ref: Local Voice Dictation Pills) — near-black
+        capsule, coral status dot, waveform bars that only move while live. */}
+    <button
+      type="button"
       onClick={toggle}
-      size="lg"
-      className={"shrink-0 rounded-full " + (listening ? "" : "bg-secondary text-secondary-foreground hover:bg-secondary/80")}
+      aria-pressed={listening}
+      aria-label={listening ? "Stop listening" : "Start voice input"}
+      className={
+        "inline-flex min-h-12 shrink-0 items-center gap-2.5 rounded-full border px-4 transition-colors duration-150 " +
+        (listening
+          ? "border-slate-600 bg-slate-900 text-slate-100"
+          : "border-slate-700 bg-[#050506] text-slate-200 hover:border-slate-500 hover:text-white")
+      }
     >
-      {listening ? "■ Stop" : (<span className="inline-flex items-center gap-1.5"><Mic /> Speak</span>)}
-    </Button>
+      <span
+        aria-hidden
+        className={"h-2 w-2 shrink-0 rounded-full " + (listening ? "bg-rose-400" : "bg-slate-600")}
+      />
+      <span aria-hidden className="flex h-5 items-center gap-[3px]">
+        {WAVE.map((h, i) => (
+          <span
+            key={i}
+            className="w-[2px] origin-center rounded-full bg-slate-200"
+            style={{
+              height: `${h}%`,
+              animation: listening ? `vf-wave 900ms ease-in-out ${i * 90}ms infinite alternate` : undefined,
+            }}
+          />
+        ))}
+      </span>
+      <span className="text-sm font-medium">{listening ? "Listening" : "Speak"}</span>
+    </button>
     {listening && <span className="inline-flex min-w-0 items-center gap-1.5 text-xs text-slate-400">
-      <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-red-400 motion-reduce:animate-none" />
       <span className="truncate">
         Listening<span className="hidden sm:inline"> — say “generate plan”, “run the trace”, “deploy”, “clear”</span>…
       </span>

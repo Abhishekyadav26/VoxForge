@@ -148,6 +148,21 @@ body {
   }
 }
 
+/* Global safety net (accessible-animation): neutralise runaway motion but keep
+   the *fact* of a transition so elements never teleport and code waiting on
+   transitionend/animationend still fires (0.01ms, never 0s). Intentional
+   Tier-3 feedback above survives because it is short by design. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* Hover lift: only on pointers that can hover (better-ui: hover effects
    only on hover-capable pointers — touch shouldn't latch a stuck state). */
 @media (hover: hover) {
@@ -172,5 +187,16 @@ body {
   }
   100% {
     box-shadow: 0 0 0 var(--distance, 8px) transparent;
+  }
+}
+
+/* Voice-input waveform bars (dictation pill). Short, local, and stopped by the
+   reduced-motion net above; the coral dot alone still shows listening state. */
+@keyframes vf-wave {
+  from {
+    transform: scaleY(0.35);
+  }
+  to {
+    transform: scaleY(1);
   }
 }

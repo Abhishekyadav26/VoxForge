@@ -27,7 +27,7 @@ export default function StudioPage() {
   const chipClass = (cmd: VoiceCommand) =>
     cmd === nextAction
       ? "inline-flex min-h-11 items-center justify-center rounded-full bg-white px-3 text-xs font-semibold text-black transition-[color,background-color,border-color,transform] duration-150 ease-out enabled:active:scale-[0.96] hover:bg-slate-200 disabled:opacity-40 sm:min-h-0 sm:py-2"
-      : "inline-flex min-h-11 items-center justify-center rounded-full border border-slate-700 bg-slate-900 px-3 text-xs text-slate-300 transition-[color,background-color,border-color,transform] duration-150 ease-out enabled:active:scale-[0.96] hover:border-slate-500 hover:text-slate-100 disabled:opacity-40 sm:min-h-0 sm:py-2";
+      : "inline-flex min-h-11 items-center justify-center rounded-full border border-white/[0.08] bg-[#050506] px-3 text-xs text-slate-300 transition-[color,background-color,border-color,transform] duration-150 ease-out enabled:active:scale-[0.96] hover:border-slate-500 hover:text-slate-100 disabled:opacity-40 sm:min-h-0 sm:py-2";
 
   const push = useCallback((item: ThreadItem) => {
     setItems((prev) => [...prev, item]);
@@ -275,7 +275,7 @@ export default function StudioPage() {
               onChange={(e) => setTranscript(e.target.value)}
               rows={2}
               placeholder="Your alert prompt appears here as you speak…"
-              className="w-full resize-none rounded-lg border border-slate-700 bg-slate-900 p-3 text-base text-slate-100 placeholder:text-slate-500 focus:border-slate-500 focus:outline-none sm:text-sm"
+              className="w-full resize-none rounded-2xl border border-white/[0.08] bg-[#050506] p-3 text-base text-slate-100 placeholder:text-slate-500 focus:border-slate-500 focus:outline-none sm:text-sm"
             />
           </div>
 
@@ -290,7 +290,7 @@ export default function StudioPage() {
             <button
               onClick={() => handleSend(transcript)}
               disabled={busy}
-              className="ml-auto inline-flex min-h-11 shrink-0 items-center rounded-lg bg-white px-4 text-sm font-semibold text-black transition-transform hover:bg-slate-200 active:scale-[0.96] disabled:opacity-40"
+              className="ml-auto inline-flex min-h-12 shrink-0 items-center rounded-full bg-white px-5 text-sm font-semibold text-black transition-transform hover:bg-slate-200 active:scale-[0.96] disabled:opacity-40"
             >
               Send
             </button>

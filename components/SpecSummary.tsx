@@ -48,7 +48,7 @@ export default function SpecSummary({ spec }: { spec: AgentSpec }) {
   const conditions = spec.steps.filter((s) => s.block.startsWith("condition."));
   const watches = spec.steps.filter((s) => !s.block.startsWith("condition."));
   return (
-    <div className="space-y-2 rounded border border-slate-700 bg-slate-900 p-4 text-sm">
+    <div className="space-y-2 rounded-2xl border border-white/[0.06] bg-slate-900/50 p-5 text-sm">
       <p className="break-words font-semibold text-slate-100">{spec.name}</p>
       <p className="text-xs text-slate-400">{cadence}</p>
       <ul className="space-y-1 text-slate-200">

@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { StepMeter } from "@/components/ui/step-meter";
 import {
   ChevronDown,
   Search,
@@ -1012,6 +1013,12 @@ export const ThinkingState = React.forwardRef<HTMLDivElement, ThinkingStateProps
             to { opacity: 1; transform: translateY(0); }
           }
         `}</style>
+
+        {/* Live progress over the real trace nodes (Vibrant ref: Claude Code Live
+            Progress Bar). Only shown when there is more than one node to walk. */}
+        {isWorking && totalNodes > 1 && (
+          <StepMeter label="Trace" done={activeIndex} total={totalNodes} className="mb-3" />
+        )}
 
         {/* Master Header Trigger (Seamless unboxed prose integration) */}
         <button
