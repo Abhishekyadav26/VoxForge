@@ -172,10 +172,10 @@ export default function LoginPage() {
             <p className="mt-2 text-xs text-slate-500">
               Signed up with Google? Use “Continue with Google” below instead.
             </p>
-            <button
+              <button
               type="button"
               onClick={() => setMode("signin")}
-              className="mt-3 text-sm text-slate-400 underline hover:text-white"
+              className="mt-3 inline-flex min-h-11 items-center justify-center text-sm text-slate-400 underline hover:text-white"
             >
               Back to sign in
             </button>
@@ -204,7 +204,7 @@ export default function LoginPage() {
                   aria-invalid={!!fieldErrors.name}
                   aria-describedby={fieldErrors.name ? "name-error" : undefined}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 outline-none focus:border-slate-400"
+                  className="min-h-11 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-base text-slate-100 placeholder-slate-500 outline-none focus:border-slate-400 sm:text-sm"
                 />
                 {fieldErrors.name && <p id="name-error" role="alert" className="mt-1 text-xs text-rose-300">{fieldErrors.name}</p>}
               </div>
@@ -219,7 +219,7 @@ export default function LoginPage() {
                   aria-invalid={!!fieldErrors.email}
                   aria-describedby={fieldErrors.email ? "email-error" : undefined}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 outline-none focus:border-slate-400"
+                  className="min-h-11 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-base text-slate-100 placeholder-slate-500 outline-none focus:border-slate-400 sm:text-sm"
                 />
                 {fieldErrors.email && <p id="email-error" role="alert" className="mt-1 text-xs text-rose-300">{fieldErrors.email}</p>}
               </div>
@@ -235,7 +235,7 @@ export default function LoginPage() {
                   aria-invalid={!!fieldErrors.password}
                   aria-describedby={fieldErrors.password ? "password-error" : undefined}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 outline-none focus:border-slate-400"
+                  className="min-h-11 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-base text-slate-100 placeholder-slate-500 outline-none focus:border-slate-400 sm:text-sm"
                 />
                 {fieldErrors.password && <p id="password-error" role="alert" className="mt-1 text-xs text-rose-300">{fieldErrors.password}</p>}
               </div>
@@ -264,7 +264,7 @@ export default function LoginPage() {
                   setFieldErrors({});
                   window.history.replaceState(null, "", "/login");
                 }}
-                className="w-full text-sm text-slate-400 underline hover:text-white"
+                className="inline-flex min-h-11 w-full items-center justify-center text-sm text-slate-400 underline hover:text-white"
               >
                 Link expired or invalid? Request a new one
               </button>
@@ -295,7 +295,7 @@ export default function LoginPage() {
         <button
           type="button"
           onClick={() => { setMode("forgot"); setFieldErrors({}); }}
-          className="text-sm text-slate-400 underline hover:text-white"
+          className="inline-flex min-h-11 items-center justify-center text-sm text-slate-400 underline hover:text-white"
         >
           Forgot your password?
         </button>
@@ -309,7 +309,7 @@ export default function LoginPage() {
           else if (mode === "register") setMode("signin");
           else setMode("signin");
         }}
-        className="text-sm text-slate-400 underline hover:text-white"
+        className="inline-flex min-h-11 items-center justify-center text-center text-sm text-slate-400 underline hover:text-white"
       >
         {mode === "signin"
           ? "Don't have an account? Create one"

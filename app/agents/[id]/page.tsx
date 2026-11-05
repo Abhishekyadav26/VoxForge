@@ -33,7 +33,7 @@ export default async function AgentDetail({ params }: { params: { id: string } }
       </Link>
       <div className="flex flex-wrap items-center gap-2">
         <h1
-          className="text-2xl font-bold"
+          className="min-w-0 break-words text-xl font-bold sm:text-2xl"
           style={
             { viewTransitionName: "agent-card-" + params.id, viewTransitionClass: "agent-card" } as React.CSSProperties
           }

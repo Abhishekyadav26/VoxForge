@@ -26,8 +26,8 @@ export default function StudioPage() {
   const nextAction: VoiceCommand = !spec ? "generate" : !hasTrace ? "test" : !hasDeploy ? "deploy" : "generate";
   const chipClass = (cmd: VoiceCommand) =>
     cmd === nextAction
-      ? "rounded-full bg-white px-3 py-2 text-xs font-semibold text-black transition-[color,background-color,border-color,transform] duration-150 ease-out enabled:active:scale-[0.96] hover:bg-slate-200 disabled:opacity-40"
-      : "rounded-full border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-slate-300 transition-[color,background-color,border-color,transform] duration-150 ease-out enabled:active:scale-[0.96] hover:border-slate-500 hover:text-slate-100 disabled:opacity-40";
+      ? "inline-flex min-h-11 items-center justify-center rounded-full bg-white px-3 text-xs font-semibold text-black transition-[color,background-color,border-color,transform] duration-150 ease-out enabled:active:scale-[0.96] hover:bg-slate-200 disabled:opacity-40 sm:min-h-0 sm:py-2"
+      : "inline-flex min-h-11 items-center justify-center rounded-full border border-slate-700 bg-slate-900 px-3 text-xs text-slate-300 transition-[color,background-color,border-color,transform] duration-150 ease-out enabled:active:scale-[0.96] hover:border-slate-500 hover:text-slate-100 disabled:opacity-40 sm:min-h-0 sm:py-2";
 
   const push = useCallback((item: ThreadItem) => {
     setItems((prev) => [...prev, item]);
@@ -38,9 +38,13 @@ export default function StudioPage() {
     );
   }, []);
 
-  /* Auto-scroll to the newest message. */
+  /* Auto-scroll to the newest message. Smooth scrolling is motion: honor
+     reduced-motion (Tier 1) by jumping instead of animating. */
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    const reduce =
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    endRef.current?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "end" });
   }, [items]);
 
   /** Push the user bubble for the transcript (also keeps a copy for later re-do). */
@@ -214,32 +218,24 @@ export default function StudioPage() {
   }, []);
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col px-4 pb-40 pt-16">
-      <style>{`
-        @media (hover: hover) {
-          .studio-command-chip:hover {
-            border-color: slate-500;
-            color: slate-100;
-          }
-        }
-      `}</style>
-      <header className="mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight text-white">VoxForge Studio</h1>
-          <p className="text-xs text-slate-400">Voice → monitoring agent → Telegram alert</p>
+    <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col px-3 pb-[calc(17rem+env(safe-area-inset-bottom))] pt-16 sm:px-4 sm:pb-40">
+      <header className="mb-3 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 sm:mb-4">
+        <div className="min-w-0">
+          <h1 className="text-lg font-bold tracking-tight text-white sm:text-xl">VoxForge Studio</h1>
+          <p className="text-xs text-slate-400">Voice → monitor → Telegram alert</p>
         </div>
         {/* ux-visual C5: status pill reflects the latest run outcome, not just mic state */}
         <span
           role="status"
-          className="rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1 text-[11px] text-slate-400"
+          className="shrink-0 rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1 text-[11px] text-slate-400"
         >
           {busy
             ? "agent working…"
             : items.some((i) => i.role === "agent" && i.kind === "deploy" && i.agentId)
-              ? "agent live — watching"
+              ? "live — watching"
               : items.some((i) => i.role === "agent" && i.kind === "trace" && !i.loading && i.triggered)
                 ? "last run triggered"
-                : "idle · listening ready"}
+                : "idle · ready"}
         </span>
       </header>
 
@@ -252,11 +248,13 @@ export default function StudioPage() {
         endRef={endRef}
       />
 
-      {/* Composer: mic + command chips + editable transcript */}
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-800 bg-[#0b0b0b]/95 backdrop-blur-md">
-        <div className="mx-auto w-full max-w-3xl px-4 py-3">
-          {/* ux-visual C4/C6: one primary chip per thread state; 2x2 grid + taller rows on mobile */}
-          <div className="mb-2 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+      {/* Composer: mic + command chips + editable transcript. Fixed to the
+          bottom with safe-area padding so the iPhone home bar never covers it. */}
+      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-800 bg-[#0b0b0b]/95 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur-md">
+        <div className="mx-auto w-full max-w-3xl px-3 pb-1 pt-2 sm:px-4 sm:py-3">
+          {/* ux-visual C4/C6: one primary chip per thread state; 2x2 grid on
+              phones (44px rows), a single wrapping row from sm up. */}
+          <div className="mb-2 grid grid-cols-2 gap-1.5 sm:flex sm:flex-wrap sm:items-center sm:gap-2">
             {COMMAND_HINTS.map(({ cmd, hint }) => (
               <button
                 key={cmd}
@@ -268,13 +266,6 @@ export default function StudioPage() {
                 🎙️ “{hint}”
               </button>
             ))}
-            <button
-              onClick={() => handleSend(transcript)}
-              disabled={busy}
-              className="col-span-2 ml-auto rounded-lg bg-white px-3 py-2 text-xs font-semibold text-black transition-transform hover:bg-slate-200 active:scale-[0.96] disabled:opacity-40 sm:col-span-1"
-            >
-              Send
-            </button>
           </div>
 
           {/* editable draft fed by voice */}
@@ -283,19 +274,26 @@ export default function StudioPage() {
               value={transcript}
               onChange={(e) => setTranscript(e.target.value)}
               rows={2}
-              placeholder="Your alert prompt appears here as you speak — say “generate plan” when ready…"
-              className="w-full resize-none rounded-lg border border-slate-700 bg-slate-900 p-3 text-sm text-slate-100 placeholder:text-slate-500 focus:border-slate-500 focus:outline-none"
+              placeholder="Your alert prompt appears here as you speak…"
+              className="w-full resize-none rounded-lg border border-slate-700 bg-slate-900 p-3 text-base text-slate-100 placeholder:text-slate-500 focus:border-slate-500 focus:outline-none sm:text-sm"
             />
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <VoiceRecorder
               onTranscript={handleTranscript}
               onCommand={handleCommand}
             />
-            <p className="text-xs text-slate-300">
+            <p className="hidden min-w-0 text-xs text-slate-300 sm:block">
               Mic on → speak the alert, then “generate plan” → “run the trace” → “deploy”
             </p>
+            <button
+              onClick={() => handleSend(transcript)}
+              disabled={busy}
+              className="ml-auto inline-flex min-h-11 shrink-0 items-center rounded-lg bg-white px-4 text-sm font-semibold text-black transition-transform hover:bg-slate-200 active:scale-[0.96] disabled:opacity-40"
+            >
+              Send
+            </button>
           </div>
         </div>
       </div>

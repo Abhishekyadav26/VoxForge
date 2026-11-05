@@ -16,7 +16,7 @@ export default function AuthButton() {
       <Button
         size="sm"
         variant="outline"
-        className="h-7 px-3 text-xs"
+        className="h-9 px-3 text-xs sm:h-7"
         onClick={() => router.push("/login")}
       >
         Sign in
@@ -41,7 +41,7 @@ export default function AuthButton() {
         </span>
       )}
       <button
-        className="whitespace-nowrap px-1 py-1 text-xs text-slate-400 hover:text-white"
+        className="inline-flex min-h-9 items-center whitespace-nowrap px-1 py-1 text-xs text-slate-400 hover:text-white sm:min-h-0"
         onClick={() => signOut({ callbackUrl: "/" })}
         title={session.user.name ?? session.user.email ?? "Signed in"}
       >

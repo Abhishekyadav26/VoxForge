@@ -154,18 +154,20 @@ export default function VoiceRecorder({ onTranscript, onPartial, onError, onComm
   if (!supported) {
     return <p className="text-sm text-slate-400">Speech not supported in this browser — use the text box below instead.</p>;
   }
-  return (<div className="flex items-center gap-3">
+  return (<div className="flex min-w-0 items-center gap-3">
     <Button
       onClick={toggle}
       size="lg"
-      className={"rounded-full " + (listening ? "" : "bg-secondary text-secondary-foreground hover:bg-secondary/80")}
+      className={"shrink-0 rounded-full " + (listening ? "" : "bg-secondary text-secondary-foreground hover:bg-secondary/80")}
     >
       {listening ? "■ Stop" : (<span className="inline-flex items-center gap-1.5"><Mic /> Speak</span>)}
     </Button>
-    {listening && <span className="inline-flex items-center gap-1.5 text-xs text-slate-400">
-      <span className="h-2 w-2 animate-pulse rounded-full bg-red-400" />
-      Listening — say “generate plan”, “run the trace”, “deploy”, “clear”
+    {listening && <span className="inline-flex min-w-0 items-center gap-1.5 text-xs text-slate-400">
+      <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-red-400 motion-reduce:animate-none" />
+      <span className="truncate">
+        Listening<span className="hidden sm:inline"> — say “generate plan”, “run the trace”, “deploy”, “clear”</span>…
+      </span>
     </span>}
-    {liveText && <p className="text-sm italic text-slate-400">{liveText}</p>}
+    {liveText && <p className="min-w-0 truncate text-sm italic text-slate-400">{liveText}</p>}
   </div>);
 }

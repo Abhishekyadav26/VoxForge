@@ -19,7 +19,7 @@ export default async function AgentsPage() {
       {agents.length === 0 && (
         <p className="text-slate-400">
           No agents yet.{" "}
-          <Link href="/studio" className="underline">
+          <Link href="/studio" className="inline-block py-1 underline">
             Create one in the Studio
           </Link>
           .
@@ -34,7 +34,7 @@ export default async function AgentsPage() {
             { viewTransitionName: "agent-card-" + a.id, viewTransitionClass: "agent-card" } as React.CSSProperties
           }
         >
-          <div className="font-semibold">{a.name}</div>
+          <div className="min-w-0 break-words font-semibold">{a.name}</div>
           <span
             className={
               "inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold " +

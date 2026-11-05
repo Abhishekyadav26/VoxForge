@@ -72,6 +72,11 @@ export function GlyphMatrix({
     let raf = 0
     let last = 0
     let stopped = false
+    /* Decorative, continuous motion (Tier 1): with reduced-motion on, draw
+       one static frame and never start the RAF loop. */
+    const motionQuery =
+      typeof window !== "undefined" ? window.matchMedia?.("(prefers-reduced-motion: reduce)") : undefined
+    let reduced = !!motionQuery?.matches
 
     const resize = () => {
       const dpr = window.devicePixelRatio || 1
@@ -134,7 +139,18 @@ export function GlyphMatrix({
 
     resize()
     draw()
-    raf = requestAnimationFrame(tick)
+    if (!reduced) raf = requestAnimationFrame(tick)
+
+    const onMotionChange = (e: MediaQueryListEvent) => {
+      reduced = e.matches
+      if (reduced) {
+        cancelAnimationFrame(raf)
+        draw()
+      } else {
+        raf = requestAnimationFrame(tick)
+      }
+    }
+    motionQuery?.addEventListener?.("change", onMotionChange)
 
     const ro = new ResizeObserver(() => {
       resize()
@@ -145,6 +161,7 @@ export function GlyphMatrix({
     return () => {
       stopped = true
       cancelAnimationFrame(raf)
+      motionQuery?.removeEventListener?.("change", onMotionChange)
       ro.disconnect()
     }
   }, [glyphs, cellSize, mutationRate, interval, fadeBottom])

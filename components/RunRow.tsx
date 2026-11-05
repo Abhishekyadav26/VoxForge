@@ -29,7 +29,7 @@ export default function RunRow({ run }: { run: RunRecord }) {
       <button
         onClick={() => setOpen(!open)}
         aria-expanded={open}
-        className="flex w-full items-center gap-2 text-left"
+        className="flex min-h-11 w-full items-center gap-2 text-left sm:min-h-0"
       >
         <span
           className={
@@ -47,7 +47,7 @@ export default function RunRow({ run }: { run: RunRecord }) {
       {open && (
         <ul className="mt-2 space-y-1 border-t border-slate-800 pt-2 text-xs text-slate-300">
           {trace.map((l: any, i: number) => (
-            <li key={i}>
+            <li key={i} className="break-words">
               <span className="font-mono text-slate-500">{l.stepId}</span> · {lineText(l)}
             </li>
           ))}

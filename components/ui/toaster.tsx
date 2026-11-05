@@ -5,11 +5,14 @@ import { Toaster as HotToaster } from "react-hot-toast";
 export default function Toaster() {
   return (
     <HotToaster
-      position="bottom-right"
-      containerStyle={{ bottom: 24, right: 24 }}
+      /* Top-center: the Studio composer is fixed to the bottom, so
+         bottom-anchored toasts would sit behind it on phones. */
+      position="top-center"
+      containerStyle={{ top: 68 }}
       gutter={10}
       toastOptions={{
-        duration: 4000,
+        /* 5s floor (motion-and-zoom: timers get at least 5s) */
+        duration: 5000,
         style: {
           background: "#0f172a", // slate-900
           color: "#e2e8f0", // slate-200

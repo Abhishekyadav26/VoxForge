@@ -70,7 +70,7 @@ export default function InkOrbitHero({
   sculptureSeed = 7,
   onReforge,
   sculptureLabel = "FORGE · 3D",
-  sculptureHint = "Drag to rotate · Click to reforge",
+  sculptureHint = "Drag or swipe to rotate · Tap to reforge",
   minHeight = "min(620px, 100svh)",
   className = "",
   style,
@@ -1030,9 +1030,11 @@ function InkOrbitSculpture({
 
 const IOS_CSS = `
 .ios-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;max-width:none;touch-action:pan-y;cursor:grab;outline:none;animation:ios-fade 1.4s .1s ease both}
+.ios-canvas:focus-visible{outline:2px solid var(--ih-ink);outline-offset:-4px}
 .ios-canvas:active{cursor:grabbing}
 .ios-canvas:focus-visible{box-shadow:inset 0 0 0 2px currentColor}
-.ios-hud{position:absolute;left:14px;right:14px;display:flex;justify-content:space-between;gap:12px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10.5px;letter-spacing:.04em;pointer-events:none;font-variant-numeric:tabular-nums}
+.ios-hud{position:absolute;left:14px;right:14px;display:flex;justify-content:space-between;gap:8px 12px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;letter-spacing:.04em;pointer-events:none;font-variant-numeric:tabular-nums}
+.ios-bottom{flex-wrap:wrap;row-gap:2px}.ios-bottom>span:first-child{text-wrap:balance}
 .ios-top{top:12px}
 .ios-bottom{bottom:12px}
 @keyframes ios-fade{from{opacity:0}to{opacity:1}}
@@ -1063,6 +1065,8 @@ const IH_CSS = `
 .ih-frame-hover:hover>.ih-c-br{transform:translate(3px,3px)}
 .ih-icon-btn{display:inline-grid;place-items:center;width:34px;height:34px;color:var(--ih-muted);border:1px solid transparent;transition:color .2s,border-color .2s}
 .ih-icon-btn:hover{color:var(--ih-ink);border-color:var(--ih-line)}
+/* Coarse pointers: 44px chrome targets and taller primary buttons (2.5.5) */
+@media (pointer:coarse){.ih-icon-btn{width:44px;height:44px}.ih-btn{padding-top:13px;padding-bottom:13px}}
 .ih-btn{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 16px;font-size:13.5px;font-weight:500;line-height:1;white-space:nowrap;border-radius:2px;transition:background-color .2s,color .2s,box-shadow .25s,transform .2s cubic-bezier(.2,.8,.2,1)}
 .ih-btn-dark{background:var(--ih-inv);color:var(--ih-inv-ink);box-shadow:0 0 0 3px var(--ih-paper),0 0 0 4px var(--ih-line-strong),0 6px 16px -8px rgba(0,0,0,.5)}
 .ih-btn-dark:hover{box-shadow:0 0 0 3px var(--ih-paper),0 0 0 4px var(--ih-ink),0 10px 22px -10px rgba(0,0,0,.6);transform:translateY(-1px)}
